@@ -1,0 +1,382 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  JOB_SEEKER
+  EMPLOYER
+  ADMIN
+  RECRUITER
+}
+
+enum SubscriptionStatus {
+  FREE
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  TRIALING
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+}
+
+enum WorkModel {
+  REMOTE
+  HYBRID
+  ON_SITE
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  SHORTLISTED
+  INTERVIEW
+  OFFERED
+  REJECTED
+  WITHDRAWN
+}
+
+enum ExperienceLevel {
+  ENTRY
+  MID
+  SENIOR
+  LEAD
+  EXECUTIVE
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+// ===================== CORE MODELS =====================
+
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  password          String?
+  role              Role                @default(JOB_SEEKER)
+  emailVerified     DateTime?
+  image             String?
+  subscriptionStatus SubscriptionStatus  @default(FREE)
+  subscriptionExpiry DateTime?
+  stripeCustomerId  String?             @unique
+  stripeSubscriptionId String?          @unique
+  isActive          Boolean             @default(true)
+  lastLoginAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  profile           Profile?
+  account           Account[]
+  sessions          Session[]
+  applications      Application[]
+  savedJobs         SavedJob[]
+  sentMessages      Message[]           @relation("SentMessages")
+  receivedMessages  Message[]           @relation("ReceivedMessages")
+  company           Company?            @relation("CompanyOwner")
+  reviews           CompanyReview[]
+  notifications     Notification[]
+  subscriptions     Subscription[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  id                String              @id @default(cuid())
+  userId            String              @unique
+  firstName         String
+  lastName          String
+  headline          String?
+  bio               String?             @db.Text
+  phone             String?
+  location          String?
+  city              String?
+  state             String?
+  country           String              @default("US")
+  skills            String[]
+  experienceYears   Int                 @default(0)
+  experienceLevel   ExperienceLevel     @default(ENTRY)
+  education         Json?
+  workHistory       Json?
+  resumeUrl         String?
+  resumeFileName    String?
+  linkedinUrl       String?
+  portfolioUrl      String?
+  githubUrl         String?
+  salaryExpectation Int?
+  availableFrom     DateTime?
+  isOpenToWork      Boolean             @default(true)
+  profileViews      Int                 @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([city, state])
+  @@index([skills])
+  @@index([experienceLevel])
+}
+
+// ===================== JOB MODELS =====================
+
+model Company {
+  id                String              @id @default(cuid())
+  name              String
+  slug              String              @unique
+  description       String?             @db.Text
+  logo              String?
+  coverImage        String?
+  website           String?
+  industry          String?
+  size              String?
+  location          String?
+  city              String?
+  state             String?
+  country           String              @default("US")
+  foundedYear       Int?
+  culture           String?             @db.Text
+  benefits          String[]
+  rating            Float               @default(0)
+  reviewCount       Int                 @default(0)
+  isVerified        Boolean             @default(false)
+  ownerId           String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  owner             User?               @relation("CompanyOwner", fields: [ownerId], references: [id])
+  jobs              Job[]
+  reviews           CompanyReview[]
+
+  @@index([industry])
+  @@index([city, state])
+}
+
+model Job {
+  id                String              @id @default(cuid())
+  title             String
+  slug              String              @unique
+  description       String              @db.Text
+  requirements      String[]            
+  responsibilities  String[]            
+  benefits          String[]
+  companyId         String
+  location          String?
+  city              String?
+  state             String?
+  country           String              @default("US")
+  salaryMin         Int?
+  salaryMax         Int?
+  salaryCurrency    String              @default("USD")
+  salaryPeriod      String              @default("yearly")
+  jobType           JobType             @default(FULL_TIME)
+  workModel         WorkModel           @default(ON_SITE)
+  experienceLevel   ExperienceLevel     @default(ENTRY)
+  skills            String[]
+  industry          String?
+  isFeatured        Boolean             @default(false)
+  isExclusive       Boolean             @default(false)
+  isUrgent          Boolean             @default(false)
+  isActive          Boolean             @default(true)
+  viewsCount        Int                 @default(0)
+  applicationsCount Int                 @default(0)
+  expiresAt         DateTime?
+  featuredUntil     DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  publishedAt       DateTime?
+
+  company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  applications      Application[]
+  savedBy           SavedJob[]
+
+  @@index([companyId])
+  @@index([city, state])
+  @@index([jobType])
+  @@index([workModel])
+  @@index([experienceLevel])
+  @@index([isFeatured, isActive])
+  @@index([createdAt(sort: Desc)])
+  @@index([salaryMin, salaryMax])
+}
+
+model Application {
+  id                String              @id @default(cuid())
+  userId            String
+  jobId             String
+  status            ApplicationStatus   @default(PENDING)
+  coverLetter       String?             @db.Text
+  resumeUrl         String?
+  isPriority        Boolean             @default(false)
+  employerNotes     String?             @db.Text
+  interviewDate     DateTime?
+  salaryExpectation Int?
+  availableFrom     DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job               Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@index([jobId, status])
+  @@index([userId, status])
+  @@index([isPriority, createdAt])
+}
+
+model SavedJob {
+  id        String   @id @default(cuid())
+  userId    String
+  jobId     String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model CompanyReview {
+  id                String   @id @default(cuid())
+  userId            String
+  companyId         String
+  rating            Int
+  title             String
+  pros              String?  @db.Text
+  cons              String?  @db.Text
+  isAnonymous       Boolean  @default(false)
+  isApproved        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+// ===================== MESSAGING =====================
+
+model Message {
+  id                String          @id @default(cuid())
+  senderId          String
+  receiverId        String
+  content           String          @db.Text
+  status            MessageStatus   @default(SENT)
+  isRead            Boolean         @default(false)
+  readAt            DateTime?
+  createdAt         DateTime        @default(now())
+
+  sender            User            @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver          User            @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId])
+  @@index([receiverId, isRead])
+  @@index([createdAt(sort: Desc)])
+}
+
+// ===================== SUBSCRIPTIONS =====================
+
+model Subscription {
+  id                String              @id @default(cuid())
+  userId            String
+  stripeSubscriptionId String           @unique
+  stripePriceId     String
+  stripeCustomerId  String
+  plan              String
+  status            String
+  currentPeriodStart DateTime
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean             @default(false)
+  cancelledAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  userId            String
+  stripePaymentId   String   @unique
+  amount            Int
+  currency          String   @default("usd")
+  status            String
+  description       String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ===================== NOTIFICATIONS =====================
+
+model Notification {
+  id                String   @id @default(cuid())
+  userId            String
+  title             String
+  message           String
+  type              String
+  link              String?
+  isRead            Boolean  @default(false)
+  readAt            DateTime?
+  createdAt         DateTime @default(now())
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt(sort: Desc)])
+}
+
+// ===================== ANALYTICS =====================
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  event     String
+  userId    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([event, createdAt])
+  @@index([userId])
+}
