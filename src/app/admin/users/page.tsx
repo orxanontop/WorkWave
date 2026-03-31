@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { useI18n } from '@/lib/i18n';
 
 export default function AdminUsersPage() {
+  const { t } = useI18n();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState<any[]>([]);
@@ -45,8 +47,8 @@ export default function AdminUsersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, isActive: !isActive }),
       });
-      if (res.ok) { fetchUsers(); toast.success('User updated'); }
-    } catch (err) { toast.error('Failed to update'); }
+      if (res.ok) { fetchUsers(); toast.success(t('admin.users.toastUpdated') as string); }
+    } catch (err) { toast.error(t('admin.users.toastUpdateFailed') as string); }
   };
 
   return (
@@ -56,16 +58,16 @@ export default function AdminUsersPage() {
         <span className="text-gray-300">/</span>
         <span className="text-sm font-medium text-gray-900">Users</span>
       </div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Manage Users ({total})</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">{(t('admin.users.title') as string).replace('{total}', String(total))}</h1>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by email or name..." className="input flex-1" />
+        <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder={t('admin.users.searchPlaceholder') as string} className="input flex-1" />
         <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setPage(1); }} className="input w-auto">
-          <option value="">All Roles</option>
-          <option value="JOB_SEEKER">Job Seekers</option>
-          <option value="EMPLOYER">Employers</option>
-          <option value="RECRUITER">Recruiters</option>
-          <option value="ADMIN">Admins</option>
+          <option value="">{t('admin.users.allRoles') as string}</option>
+          <option value="JOB_SEEKER">{t('admin.users.jobSeekers') as string}</option>
+          <option value="EMPLOYER">{t('admin.users.employers') as string}</option>
+          <option value="RECRUITER">{t('admin.users.recruiters') as string}</option>
+          <option value="ADMIN">{t('admin.users.admins') as string}</option>
         </select>
       </div>
 
@@ -74,19 +76,19 @@ export default function AdminUsersPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">User</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Role</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Plan</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Applications</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Joined</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.users.user') as string}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.users.role') as string}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.users.plan') as string}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.users.applications') as string}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.users.joined') as string}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.users.actions') as string}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 [1,2,3,4,5].map(i => <tr key={i}><td colSpan={6} className="px-4 py-3"><div className="skeleton h-5 w-full"/></td></tr>)
               ) : users.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No users found</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{t('admin.users.noUsers') as string}</td></tr>
               ) : (
                 users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
@@ -113,7 +115,7 @@ export default function AdminUsersPage() {
                         onClick={() => toggleUser(user.id, user.isActive)}
                         className={`btn btn-sm ${user.isActive ? 'btn-ghost text-red-600' : 'btn-secondary text-green-600'}`}
                       >
-                        {user.isActive ? 'Deactivate' : 'Activate'}
+                        {user.isActive ? t('admin.users.deactivate') as string : t('admin.users.activate') as string}
                       </button>
                     </td>
                   </tr>
@@ -126,9 +128,9 @@ export default function AdminUsersPage() {
 
       {total > 20 && (
         <div className="flex items-center justify-center gap-2 mt-6">
-          <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="btn btn-secondary btn-sm">Previous</button>
+          <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="btn btn-secondary btn-sm">{t('admin.previous') as string}</button>
           <span className="text-sm text-gray-500">Page {page} of {Math.ceil(total/20)}</span>
-          <button onClick={() => setPage(p => p+1)} disabled={page >= Math.ceil(total/20)} className="btn btn-secondary btn-sm">Next</button>
+          <button onClick={() => setPage(p => p+1)} disabled={page >= Math.ceil(total/20)} className="btn btn-secondary btn-sm">{t('admin.next') as string}</button>
         </div>
       )}
     </div>

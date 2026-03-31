@@ -5,10 +5,12 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { EXPERIENCE_LEVELS, POPULAR_SKILLS } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<any>({
@@ -63,7 +65,7 @@ export default function ProfilePage() {
         });
       }
     } catch (err) {
-      toast.error('Failed to load profile');
+      toast.error(t('profile.loadFailed') as string);
     } finally {
       setIsLoading(false);
     }
@@ -79,12 +81,12 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success('Profile updated!');
+        toast.success(t('profile.updated') as string);
       } else {
-        toast.error(data.error || 'Failed to update profile');
+        toast.error(data.error || t('profile.updateFailed') as string);
       }
     } catch (err) {
-      toast.error('Something went wrong');
+      toast.error(t('profile.somethingWrong') as string);
     } finally {
       setIsSaving(false);
     }
@@ -122,21 +124,21 @@ export default function ProfilePage() {
     <div className="container-app py-8 max-w-3xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
-          <p className="text-gray-500 mt-1">Keep your profile up to date to attract employers</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('profile.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('profile.subtitle')}</p>
         </div>
         <button onClick={handleSave} disabled={isSaving} className="btn btn-primary">
-          {isSaving ? 'Saving...' : 'Save Changes'}
+          {isSaving ? t('profile.saving') : t('profile.saveChanges')}
         </button>
       </div>
 
       <div className="space-y-6">
         {/* Basic Info */}
         <div className="card p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.basicInfo')}</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">First Name</label>
+              <label className="label">{t('profile.firstName')}</label>
               <input
                 type="text"
                 value={profile.firstName}
@@ -145,7 +147,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="label">Last Name</label>
+              <label className="label">{t('profile.lastName')}</label>
               <input
                 type="text"
                 value={profile.lastName}
@@ -154,43 +156,43 @@ export default function ProfilePage() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Headline</label>
+              <label className="label">{t('profile.headline')}</label>
               <input
                 type="text"
                 value={profile.headline}
                 onChange={(e) => setProfile({ ...profile, headline: e.target.value })}
                 className="input"
-                placeholder="e.g. Senior Software Engineer with 5+ years experience"
+                placeholder={t('profile.headlinePlaceholder') as string}
               />
             </div>
             <div>
-              <label className="label">Phone</label>
+              <label className="label">{t('profile.phone')}</label>
               <input
                 type="tel"
                 value={profile.phone}
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                 className="input"
-                placeholder="+1 (555) 000-0000"
+                placeholder={t('profile.phonePlaceholder') as string}
               />
             </div>
             <div>
-              <label className="label">City</label>
+              <label className="label">{t('profile.city')}</label>
               <input
                 type="text"
                 value={profile.city}
                 onChange={(e) => setProfile({ ...profile, city: e.target.value })}
                 className="input"
-                placeholder="San Francisco"
+                placeholder={t('profile.cityPlaceholder') as string}
               />
             </div>
             <div>
-              <label className="label">State</label>
+              <label className="label">{t('profile.state')}</label>
               <input
                 type="text"
                 value={profile.state}
                 onChange={(e) => setProfile({ ...profile, state: e.target.value })}
                 className="input"
-                placeholder="CA"
+                placeholder={t('profile.statePlaceholder') as string}
               />
             </div>
           </div>
@@ -198,21 +200,21 @@ export default function ProfilePage() {
 
         {/* Bio */}
         <div className="card p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">About</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.about')}</h2>
           <textarea
             value={profile.bio}
             onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
             className="input min-h-[150px]"
-            placeholder="Tell employers about yourself, your experience, and what you are looking for..."
+            placeholder={t('profile.bioPlaceholder') as string}
           />
         </div>
 
         {/* Experience */}
         <div className="card p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Experience</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.experience')}</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">Years of Experience</label>
+              <label className="label">{t('profile.yearsExp')}</label>
               <input
                 type="number"
                 min={0}
@@ -223,7 +225,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="label">Experience Level</label>
+              <label className="label">{t('profile.expLevel')}</label>
               <select
                 value={profile.experienceLevel}
                 onChange={(e) => setProfile({ ...profile, experienceLevel: e.target.value })}
@@ -235,13 +237,13 @@ export default function ProfilePage() {
               </select>
             </div>
             <div>
-              <label className="label">Salary Expectation (annual)</label>
+              <label className="label">{t('profile.salaryExp')}</label>
               <input
                 type="number"
                 value={profile.salaryExpectation || ''}
                 onChange={(e) => setProfile({ ...profile, salaryExpectation: parseInt(e.target.value) || null })}
                 className="input"
-                placeholder="e.g. 80000"
+                placeholder={t('profile.salaryPlaceholder') as string}
               />
             </div>
             <div className="flex items-end">
@@ -252,7 +254,7 @@ export default function ProfilePage() {
                   onChange={(e) => setProfile({ ...profile, isOpenToWork: e.target.checked })}
                   className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
-                <span className="text-sm font-medium text-gray-700">Open to work</span>
+                <span className="text-sm font-medium text-gray-700">{t('profile.openToWork')}</span>
               </label>
             </div>
           </div>
@@ -260,7 +262,7 @@ export default function ProfilePage() {
 
         {/* Skills */}
         <div className="card p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Skills</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.skills')}</h2>
           <div className="mb-4">
             <div className="flex gap-2">
               <input
@@ -269,15 +271,15 @@ export default function ProfilePage() {
                 onChange={(e) => setSkillInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(skillInput); } }}
                 className="input flex-1"
-                placeholder="Type a skill and press Enter"
+                placeholder={t('profile.skillPlaceholder') as string}
               />
-              <button onClick={() => addSkill(skillInput)} className="btn btn-secondary">Add</button>
+              <button onClick={() => addSkill(skillInput)} className="btn btn-secondary">{t('profile.add')}</button>
             </div>
           </div>
 
           {/* Popular skills */}
           <div className="mb-4">
-            <p className="text-xs text-gray-500 mb-2">Popular skills:</p>
+            <p className="text-xs text-gray-500 mb-2">{t('profile.popularSkills')}</p>
             <div className="flex flex-wrap gap-1.5">
               {POPULAR_SKILLS.filter(s => !profile.skills.includes(s)).slice(0, 10).map((skill) => (
                 <button
@@ -313,36 +315,36 @@ export default function ProfilePage() {
 
         {/* Links */}
         <div className="card p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Links</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.links')}</h2>
           <div className="space-y-4">
             <div>
-              <label className="label">LinkedIn URL</label>
+              <label className="label">{t('profile.linkedin')}</label>
               <input
                 type="url"
                 value={profile.linkedinUrl}
                 onChange={(e) => setProfile({ ...profile, linkedinUrl: e.target.value })}
                 className="input"
-                placeholder="https://linkedin.com/in/yourname"
+                placeholder={t('profile.linkedinPlaceholder') as string}
               />
             </div>
             <div>
-              <label className="label">Portfolio URL</label>
+              <label className="label">{t('profile.portfolio')}</label>
               <input
                 type="url"
                 value={profile.portfolioUrl}
                 onChange={(e) => setProfile({ ...profile, portfolioUrl: e.target.value })}
                 className="input"
-                placeholder="https://yourportfolio.com"
+                placeholder={t('profile.portfolioPlaceholder') as string}
               />
             </div>
             <div>
-              <label className="label">GitHub URL</label>
+              <label className="label">{t('profile.github')}</label>
               <input
                 type="url"
                 value={profile.githubUrl}
                 onChange={(e) => setProfile({ ...profile, githubUrl: e.target.value })}
                 className="input"
-                placeholder="https://github.com/yourname"
+                placeholder={t('profile.githubPlaceholder') as string}
               />
             </div>
           </div>
@@ -350,20 +352,20 @@ export default function ProfilePage() {
 
         {/* Resume Upload placeholder */}
         <div className="card p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Resume</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.resume')}</h2>
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors cursor-pointer">
             <svg className="w-10 h-10 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <p className="text-sm text-gray-600 font-medium">Upload your resume</p>
-            <p className="text-xs text-gray-400 mt-1">PDF, DOC, or DOCX up to 5MB</p>
+            <p className="text-sm text-gray-600 font-medium">{t('profile.uploadResume')}</p>
+            <p className="text-xs text-gray-400 mt-1">{t('profile.resumeFormats')}</p>
           </div>
         </div>
 
         {/* Save button (bottom) */}
         <div className="flex justify-end">
           <button onClick={handleSave} disabled={isSaving} className="btn btn-primary btn-lg">
-            {isSaving ? 'Saving...' : 'Save All Changes'}
+            {isSaving ? t('profile.saving') : t('profile.saveAll')}
           </button>
         </div>
       </div>

@@ -6,10 +6,12 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { JOB_TYPES, WORK_MODELS } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n';
 
 export default function SavedJobsPage() {
   const { status } = useSession();
   const router = useRouter();
+  const { t } = useI18n();
   const [saved, setSaved] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,8 +37,8 @@ export default function SavedJobsPage() {
         body: JSON.stringify({ jobId }),
       });
       setSaved(s => s.filter(item => item.job.id !== jobId));
-      toast.success('Job removed from saved');
-    } catch (err) { toast.error('Failed to remove'); }
+      toast.success(String(t('saved.removed')));
+    } catch (err) { toast.error(String(t('saved.removeFailed'))); }
   };
 
   const formatSalary = (min: number | null, max: number | null) => {
@@ -49,17 +51,17 @@ export default function SavedJobsPage() {
 
   return (
     <div className="container-app py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Saved Jobs</h1>
-      <p className="text-gray-500 mb-8">{saved.length} saved jobs</p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">{String(t('saved.title'))}</h1>
+      <p className="text-gray-500 mb-8">{saved.length} {String(t('saved.savedCount'))}</p>
 
       {isLoading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="card p-6"><div className="skeleton h-6 w-1/3"/></div>)}</div>
       ) : saved.length === 0 ? (
         <div className="card p-12 text-center">
           <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-          <h3 className="font-semibold text-gray-900 mb-1">No saved jobs</h3>
-          <p className="text-sm text-gray-500 mb-4">Save jobs to review them later</p>
-          <Link href="/jobs" className="btn btn-primary btn-sm">Browse Jobs</Link>
+          <h3 className="font-semibold text-gray-900 mb-1">{String(t('saved.noSaved'))}</h3>
+          <p className="text-sm text-gray-500 mb-4">{String(t('saved.noSavedDesc'))}</p>
+          <Link href="/jobs" className="btn btn-primary btn-sm">{String(t('saved.browseJobs'))}</Link>
         </div>
       ) : (
         <div className="space-y-3">

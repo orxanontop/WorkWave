@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { JOB_TYPES, WORK_MODELS, EXPERIENCE_LEVELS, INDUSTRIES, SALARY_RANGES } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n';
 
 interface Job {
   id: string;
@@ -32,6 +33,7 @@ interface Job {
 export default function JobsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -123,7 +125,7 @@ export default function JobsPage() {
             </svg>
             <input
               type="text"
-              placeholder="Search jobs, skills, companies..."
+              placeholder={t('jobs.searchPlaceholder') as string}
               value={filters.search}
               onChange={(e) => { setFilters({ ...filters, search: e.target.value }); setPage(1); }}
               className="input pl-10"
@@ -135,7 +137,7 @@ export default function JobsPage() {
             </svg>
             <input
               type="text"
-              placeholder="City or zip code"
+              placeholder={t('jobs.cityPlaceholder') as string}
               value={filters.city}
               onChange={(e) => { setFilters({ ...filters, city: e.target.value }); setPage(1); }}
               className="input pl-10"
@@ -145,7 +147,7 @@ export default function JobsPage() {
             <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
-            Filters
+            {t('jobs.filters')}
           </button>
         </div>
 
@@ -154,7 +156,7 @@ export default function JobsPage() {
           <div className="mt-4 pt-4 border-t border-gray-200 space-y-4 animate-slide-down">
             {/* Job Type */}
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Job Type</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">{t('jobs.jobType')}</p>
               <div className="flex flex-wrap gap-2">
                 {JOB_TYPES.map((type) => (
                   <button
@@ -174,7 +176,7 @@ export default function JobsPage() {
 
             {/* Work Model */}
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Work Model</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">{t('jobs.workModel')}</p>
               <div className="flex flex-wrap gap-2">
                 {WORK_MODELS.map((model) => (
                   <button
@@ -195,7 +197,7 @@ export default function JobsPage() {
             {/* Experience Level & Industry */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Experience Level</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">{t('jobs.experienceLevel')}</p>
                 <div className="flex flex-wrap gap-2">
                   {EXPERIENCE_LEVELS.map((level) => (
                     <button
@@ -214,13 +216,13 @@ export default function JobsPage() {
               </div>
 
               <div>
-                <label className="label">Industry</label>
+                <label className="label">{t('jobs.industry')}</label>
                 <select
                   value={filters.industry}
                   onChange={(e) => { setFilters({ ...filters, industry: e.target.value }); setPage(1); }}
                   className="input"
                 >
-                  <option value="">All Industries</option>
+                  <option value="">{t('jobs.allIndustries')}</option>
                   {INDUSTRIES.map((ind) => (
                     <option key={ind} value={ind}>{ind}</option>
                   ))}
@@ -234,17 +236,17 @@ export default function JobsPage() {
       {/* Results header */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-500">
-          {isLoading ? 'Searching...' : `${total} jobs found`}
+          {isLoading ? t('jobs.searching') : `${total} ${t('jobs.jobsFound')}`}
         </p>
         <select
           value={filters.sort}
           onChange={(e) => { setFilters({ ...filters, sort: e.target.value }); setPage(1); }}
           className="input w-auto text-sm"
         >
-          <option value="newest">Newest First</option>
-          <option value="salary_high">Highest Salary</option>
-          <option value="salary_low">Lowest Salary</option>
-          <option value="oldest">Oldest First</option>
+          <option value="newest">{t('jobs.sort.newest')}</option>
+          <option value="salary_high">{t('jobs.sort.salaryHigh')}</option>
+          <option value="salary_low">{t('jobs.sort.salaryLow')}</option>
+          <option value="oldest">{t('jobs.sort.oldest')}</option>
         </select>
       </div>
 
@@ -263,8 +265,8 @@ export default function JobsPage() {
             <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">No jobs found</h3>
-            <p className="text-gray-500 text-sm">Try adjusting your search or filters</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">{t('jobs.noJobs')}</h3>
+            <p className="text-gray-500 text-sm">{t('jobs.noJobsDesc')}</p>
           </div>
         ) : (
           jobs.map((job) => (
@@ -286,14 +288,14 @@ export default function JobsPage() {
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors">
                           {job.title}
-                          {job.isFeatured && (
-                            <span className="ml-2 badge badge-premium text-xs">Featured</span>
+                            {job.isFeatured && (
+                            <span className="ml-2 badge badge-premium text-xs">{t('jobs.badges.featured')}</span>
                           )}
                           {job.isExclusive && (
-                            <span className="ml-2 badge badge-accent text-xs">Premium</span>
+                            <span className="ml-2 badge badge-accent text-xs">{t('jobs.badges.premium')}</span>
                           )}
                           {job.isUrgent && (
-                            <span className="ml-2 badge badge-danger text-xs">Urgent</span>
+                            <span className="ml-2 badge badge-danger text-xs">{t('jobs.badges.urgent')}</span>
                           )}
                         </h3>
                         <p className="text-sm text-gray-600 mt-0.5">{job.company.name}</p>
@@ -318,7 +320,7 @@ export default function JobsPage() {
                         </span>
                       )}
                       <span className={`badge ${getJobTypeColor(job.jobType)}`}>
-                        {JOB_TYPES.find((t) => t.value === job.jobType)?.label}
+                        {JOB_TYPES.find((jt) => jt.value === job.jobType)?.label}
                       </span>
                       <span className="badge badge-gray">
                         {WORK_MODELS.find((m) => m.value === job.workModel)?.label}
@@ -333,7 +335,7 @@ export default function JobsPage() {
                           </span>
                         ))}
                         {job.skills.length > 5 && (
-                          <span className="px-2 py-0.5 text-gray-400 text-xs">+{job.skills.length - 5} more</span>
+                          <span className="px-2 py-0.5 text-gray-400 text-xs">+{job.skills.length - 5} {t('jobs.more')}</span>
                         )}
                       </div>
                     )}
@@ -361,17 +363,17 @@ export default function JobsPage() {
             disabled={page === 1}
             className="btn btn-secondary btn-sm"
           >
-            Previous
+            {t('jobs.previous')}
           </button>
           <span className="text-sm text-gray-500">
-            Page {page} of {Math.ceil(total / 20)}
+            {`${t('jobs.page')} ${page} ${t('jobs.of')} ${Math.ceil(total / 20)}`}
           </span>
           <button
             onClick={() => setPage((p) => p + 1)}
             disabled={page >= Math.ceil(total / 20)}
             className="btn btn-secondary btn-sm"
           >
-            Next
+            {t('jobs.next')}
           </button>
         </div>
       )}

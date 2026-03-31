@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
 
 export default function CompaniesPage() {
+  const { t } = useI18n();
   const [companies, setCompanies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -28,13 +30,13 @@ export default function CompaniesPage() {
 
   return (
     <div className="container-app py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Companies</h1>
-      <p className="text-gray-500 mb-8">{total} companies hiring on {`JobMarket`}</p>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('companies.title')}</h1>
+      <p className="text-gray-500 mb-8">{total} {t('companies.hiring')}</p>
 
       <div className="mb-6">
         <div className="relative max-w-md">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies..." className="input pl-10" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={String(t('companies.searchPlaceholder'))} className="input pl-10" />
         </div>
       </div>
 
@@ -42,8 +44,8 @@ export default function CompaniesPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3,4,5,6].map(i => <div key={i} className="card p-6"><div className="skeleton h-12 w-12 rounded-xl mb-4"/><div className="skeleton h-5 w-32 mb-2"/><div className="skeleton h-4 w-24"/></div>)}</div>
       ) : companies.length === 0 ? (
         <div className="card p-12 text-center">
-          <h3 className="font-semibold text-gray-900 mb-1">No companies found</h3>
-          <p className="text-sm text-gray-500">Try a different search term</p>
+          <h3 className="font-semibold text-gray-900 mb-1">{String(t('companies.noCompanies'))}</h3>
+          <p className="text-sm text-gray-500">{String(t('companies.noCompaniesDesc'))}</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -58,7 +60,7 @@ export default function CompaniesPage() {
                   <p className="text-sm text-gray-500">{company.industry || 'Company'}</p>
                   <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
                     {company.city && <span>{company.city}{company.state ? `, ${company.state}` : ''}</span>}
-                    <span className="text-primary-600 font-medium">{company._count?.jobs || 0} open jobs</span>
+                    <span className="text-primary-600 font-medium">{company._count?.jobs || 0} {String(t('companies.openJobs'))}</span>
                   </div>
                 </div>
               </div>

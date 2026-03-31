@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { useI18n } from '@/lib/i18n';
 
 export default function MessagesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useI18n();
   const [conversations, setConversations] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [activeChat, setActiveChat] = useState<string | null>(null);
@@ -60,9 +62,9 @@ export default function MessagesPage() {
         setMessages(m => [...m, data.data]);
         setNewMessage('');
       } else {
-        toast.error(data.error || 'Failed to send');
+        toast.error(data.error || String(t('messages.toasts.sendFailed')));
       }
-    } catch (err) { toast.error('Failed to send message'); }
+    } catch (err) { toast.error(String(t('messages.toasts.failed'))); }
     finally { setIsSending(false); }
   };
 
@@ -70,14 +72,14 @@ export default function MessagesPage() {
 
   return (
     <div className="container-app py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Messages</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">{String(t('messages.title'))}</h1>
 
       {(session?.user as any)?.subscriptionStatus !== 'ACTIVE' && (session?.user as any)?.role === 'JOB_SEEKER' ? (
         <div className="card p-12 text-center">
           <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-          <h3 className="font-semibold text-gray-900 mb-2">Premium Feature</h3>
-          <p className="text-sm text-gray-500 mb-4">Direct messaging is available for Premium members</p>
-          <button onClick={() => router.push('/pricing')} className="btn btn-accent">Upgrade to Premium</button>
+          <h3 className="font-semibold text-gray-900 mb-2">{String(t('messages.premiumFeature'))}</h3>
+          <p className="text-sm text-gray-500 mb-4">{String(t('messages.premiumDesc'))}</p>
+          <button onClick={() => router.push('/pricing')} className="btn btn-accent">{String(t('messages.upgradePremium'))}</button>
         </div>
       ) : (
         <div className="card overflow-hidden" style={{ height: 'calc(100vh - 200px)', minHeight: '500px' }}>
@@ -85,13 +87,13 @@ export default function MessagesPage() {
             {/* Conversations list */}
             <div className={`w-full sm:w-80 border-r border-gray-200 flex flex-col ${activeChat ? 'hidden sm:flex' : 'flex'}`}>
               <div className="p-4 border-b border-gray-200">
-                <input type="text" placeholder="Search conversations..." className="input" />
+                <input type="text" placeholder={String(t('messages.searchPlaceholder'))} className="input" />
               </div>
               <div className="flex-1 overflow-y-auto">
                 {isLoading ? (
                   <div className="p-4 space-y-3">{[1,2,3].map(i => <div key={i} className="skeleton h-12 w-full"/>)}</div>
                 ) : conversations.length === 0 ? (
-                  <div className="p-8 text-center text-gray-400 text-sm">No conversations yet</div>
+                  <div className="p-8 text-center text-gray-400 text-sm">{String(t('messages.noConversations'))}</div>
                 ) : (
                   conversations.map((conv: any) => (
                     <button
@@ -123,7 +125,7 @@ export default function MessagesPage() {
                     <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
                       <span className="text-xs font-bold text-primary-600">?</span>
                     </div>
-                    <span className="font-medium text-gray-900 text-sm">Conversation</span>
+                    <span className="font-medium text-gray-900 text-sm">{String(t('messages.conversation'))}</span>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {messages.map((msg: any) => (
@@ -144,18 +146,18 @@ export default function MessagesPage() {
                         type="text"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type a message..."
+                        placeholder={String(t('messages.typePlaceholder'))}
                         className="input flex-1"
                       />
                       <button type="submit" disabled={isSending || !newMessage.trim()} className="btn btn-primary">
-                        Send
+                        {String(t('messages.send'))}
                       </button>
                     </form>
                   </div>
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-                  Select a conversation to start messaging
+                  {String(t('messages.selectConversation'))}
                 </div>
               )}
             </div>

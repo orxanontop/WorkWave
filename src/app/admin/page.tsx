@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/lib/i18n';
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useI18n();
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -31,12 +33,12 @@ export default function AdminDashboard() {
 
   const o = stats.overview;
   const statCards = [
-    { label: 'Total Users', value: o.totalUsers.toLocaleString(), change: `+${o.newUsersThisMonth} this month`, icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', color: 'blue' },
-    { label: 'Active Jobs', value: o.activeJobs.toLocaleString(), change: `${o.totalJobs} total`, icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'green' },
-    { label: 'Applications', value: o.totalApplications.toLocaleString(), change: `${o.applicationsThisMonth} this month`, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: 'purple' },
-    { label: 'Revenue', value: `$${o.totalRevenue.toLocaleString()}`, change: `${o.premiumUsers} premium users`, icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'amber' },
-    { label: 'Premium Users', value: o.premiumUsers.toLocaleString(), change: `${Math.round((o.premiumUsers / o.totalUsers) * 100) || 0}% conversion`, icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z', color: 'pink' },
-    { label: 'Companies', value: o.totalCompanies.toLocaleString(), change: 'verified', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', color: 'indigo' },
+    { label: t('admin.stats.totalUsers'), value: o.totalUsers.toLocaleString(), change: `+${o.newUsersThisMonth} this month`, icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', color: 'blue' },
+    { label: t('admin.stats.activeJobs'), value: o.activeJobs.toLocaleString(), change: `${o.totalJobs} total`, icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'green' },
+    { label: t('admin.stats.applications'), value: o.totalApplications.toLocaleString(), change: `${o.applicationsThisMonth} this month`, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: 'purple' },
+    { label: t('admin.stats.revenue'), value: `$${o.totalRevenue.toLocaleString()}`, change: `${o.premiumUsers} premium users`, icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'amber' },
+    { label: t('admin.stats.premiumUsers'), value: o.premiumUsers.toLocaleString(), change: `${Math.round((o.premiumUsers / o.totalUsers) * 100) || 0}% conversion`, icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z', color: 'pink' },
+    { label: t('admin.stats.companies'), value: o.totalCompanies.toLocaleString(), change: 'verified', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', color: 'indigo' },
   ];
 
   const colorMap: Record<string, string> = {
@@ -49,23 +51,23 @@ export default function AdminDashboard() {
     <div className="container-app py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-500 mt-1">Platform overview and management</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('admin.dashboard')}</h1>
+          <p className="text-gray-500 mt-1">{t('admin.subtitle')}</p>
         </div>
         <div className="flex gap-3">
-          <Link href="/admin/users" className="btn btn-secondary btn-sm">Manage Users</Link>
-          <Link href="/admin/jobs" className="btn btn-secondary btn-sm">Manage Jobs</Link>
+          <Link href="/admin/users" className="btn btn-secondary btn-sm">{t('admin.manageUsers')}</Link>
+          <Link href="/admin/jobs" className="btn btn-secondary btn-sm">{t('admin.manageJobs')}</Link>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {statCards.map((s) => (
-          <div key={s.label} className="card p-5">
+          <div key={s.label as string} className="card p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorMap[s.color]}`}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={s.icon}/></svg>
               </div>
-              <span className="text-sm text-gray-500">{s.label}</span>
+              <span className="text-sm text-gray-500">{s.label as string}</span>
             </div>
             <div className="text-2xl font-bold text-gray-900">{s.value}</div>
             <p className="text-xs text-gray-400 mt-1">{s.change}</p>
@@ -76,7 +78,7 @@ export default function AdminDashboard() {
       {/* Charts data summary */}
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="card p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">User Growth (6 months)</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('admin.userGrowth')}</h3>
           <div className="space-y-2">
             {stats.charts.userGrowth.map((item: any) => (
               <div key={item.month} className="flex items-center gap-3">
@@ -95,7 +97,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="card p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Jobs by Type</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('admin.jobsByType')}</h3>
           <div className="space-y-3">
             {stats.charts.jobsByType.map((item: any) => (
               <div key={item.type} className="flex items-center justify-between">
@@ -104,7 +106,7 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-          <h3 className="font-semibold text-gray-900 mb-4 mt-6">Applications by Status</h3>
+          <h3 className="font-semibold text-gray-900 mb-4 mt-6">{t('admin.appsByStatus')}</h3>
           <div className="space-y-3">
             {stats.charts.applicationsByStatus.map((item: any) => (
               <div key={item.status} className="flex items-center justify-between">

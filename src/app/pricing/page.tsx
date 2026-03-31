@@ -5,11 +5,13 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { SUBSCRIPTION_PLANS, APP_NAME } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n';
 
 export default function PricingPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useI18n();
 
   const handleSubscribe = async (planKey: string) => {
     if (!session) { router.push('/auth/register'); return; }
@@ -28,7 +30,7 @@ export default function PricingPage() {
       } else {
         toast.error(data.error || 'Failed to start checkout');
       }
-    } catch (err) { toast.error('Something went wrong'); }
+    } catch (err) { toast.error(String(t('common.somethingWrong'))); }
     finally { setIsLoading(false); }
   };
 
@@ -37,12 +39,12 @@ export default function PricingPage() {
   return (
     <div className="container-app py-16">
       <div className="text-center max-w-2xl mx-auto mb-16">
-        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">Simple, transparent pricing</h1>
-        <p className="text-lg text-gray-500">Start free, upgrade when you are ready. No hidden fees, cancel anytime.</p>
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">{t('pricing.title')}</h1>
+        <p className="text-lg text-gray-500">{t('pricing.subtitle')}</p>
         {isPremium && (
           <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-green-50 text-green-700 rounded-full text-sm font-medium">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
-            You are on the Premium plan
+            {t('pricing.premiumPlan')}
           </div>
         )}
       </div>
@@ -52,7 +54,7 @@ export default function PricingPage() {
           <div key={key} className={`card p-8 relative ${'popular' in plan ? 'border-primary-500 border-2 shadow-xl scale-[1.02]' : ''}`}>
             {'popular' in plan && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full">
-                Most Popular
+                {t('pricing.premium.badge')}
               </div>
             )}
 
@@ -78,7 +80,7 @@ export default function PricingPage() {
               disabled={isLoading || (key === 'free' && isPremium)}
               className={`btn w-full btn-lg ${'popular' in plan ? 'btn-primary' : 'btn-secondary'}`}
             >
-              {key === 'free' ? 'Get Started Free' : isPremium ? 'Current Plan' : 'Upgrade Now'}
+              {key === 'free' ? String(t('pricing.getStartedFree')) : isPremium ? String(t('pricing.currentPlan')) : String(t('pricing.upgradeNow'))}
             </button>
           </div>
         ))}
@@ -86,15 +88,15 @@ export default function PricingPage() {
 
       {/* FAQ */}
       <div className="max-w-2xl mx-auto mt-20">
-        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Frequently Asked Questions</h2>
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">{t('pricing.faq.title')}</h2>
         <div className="space-y-4">
           {[
-            { q: 'Can I cancel anytime?', a: 'Yes! You can cancel your subscription at any time. You will continue to have access until the end of your billing period.' },
-            { q: 'What payment methods do you accept?', a: 'We accept all major credit cards through Stripe, our secure payment processor.' },
-            { q: 'Is there a free trial?', a: 'The free plan lets you browse all jobs and apply to up to 5 jobs per month. No credit card required.' },
-            { q: 'How does priority ranking work?', a: 'Premium applications are highlighted and sorted to the top of the employer dashboard, giving you 3x more visibility.' },
+            { q: t('pricing.faq.cancel.q'), a: t('pricing.faq.cancel.a') },
+            { q: t('pricing.faq.payment.q'), a: t('pricing.faq.payment.a') },
+            { q: t('pricing.faq.trial.q'), a: t('pricing.faq.trial.a') },
+            { q: t('pricing.faq.priority.q'), a: t('pricing.faq.priority.a') },
           ].map(({ q, a }) => (
-            <div key={q} className="card p-6">
+            <div key={String(q)} className="card p-6">
               <h3 className="font-semibold text-gray-900 mb-2">{q}</h3>
               <p className="text-sm text-gray-500">{a}</p>
             </div>

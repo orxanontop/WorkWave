@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { APPLICATION_STATUSES, JOB_TYPES } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n';
 
 export default function ApplicationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useI18n();
   const [applications, setApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -40,7 +42,7 @@ export default function ApplicationsPage() {
   };
 
   const handleWithdraw = async (id: string) => {
-    if (!confirm('Are you sure you want to withdraw this application?')) return;
+    if (!confirm(t('applications.confirmWithdraw') as string)) return;
     try {
       const res = await fetch(`/api/applications/${id}`, {
         method: 'PATCH',
@@ -72,11 +74,11 @@ export default function ApplicationsPage() {
     <div className="container-app py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Applications</h1>
-          <p className="text-gray-500 mt-1">{total} total applications</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('applications.title')}</h1>
+          <p className="text-gray-500 mt-1">{`${total} ${t('applications.total')}`}</p>
         </div>
         <Link href="/jobs" className="btn btn-primary">
-          Browse Jobs
+          {t('applications.browseJobs')}
         </Link>
       </div>
 
@@ -92,7 +94,7 @@ export default function ApplicationsPage() {
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
-            {status === 'all' ? 'All' : APPLICATION_STATUSES.find(s => s.value === status)?.label}
+            {status === 'all' ? t('applications.all') : APPLICATION_STATUSES.find(s => s.value === status)?.label}
           </button>
         ))}
       </div>
@@ -112,11 +114,11 @@ export default function ApplicationsPage() {
           <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <h3 className="font-semibold text-gray-900 mb-1">No applications found</h3>
+          <h3 className="font-semibold text-gray-900 mb-1">{t('applications.noApps')}</h3>
           <p className="text-sm text-gray-500 mb-4">
-            {filter !== 'all' ? 'No applications with this status' : 'Start applying to jobs to see them here'}
+            {filter !== 'all' ? t('applications.noAppsFiltered') : t('applications.noAppsDesc')}
           </p>
-          <Link href="/jobs" className="btn btn-primary btn-sm">Browse Jobs</Link>
+          <Link href="/jobs" className="btn btn-primary btn-sm">{t('applications.browseJobs')}</Link>
         </div>
       ) : (
         <div className="space-y-3">
@@ -136,12 +138,12 @@ export default function ApplicationsPage() {
                     <Link href={`/jobs/${app.job.id}`} className="font-semibold text-gray-900 hover:text-primary-600">
                       {app.job.title}
                     </Link>
-                    {app.isPriority && <span className="badge badge-premium text-xs">Priority</span>}
+                    {app.isPriority && <span className="badge badge-premium text-xs">{t('applications.priority')}</span>}
                   </div>
                   <p className="text-sm text-gray-500">{app.job.company?.name}</p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                     {app.job.city && <span>{app.job.city}{app.job.state ? `, ${app.job.state}` : ''}</span>}
-                    <span>Applied {new Date(app.createdAt).toLocaleDateString()}</span>
+                    <span>{t('applications.applied')}{new Date(app.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
 
@@ -154,7 +156,7 @@ export default function ApplicationsPage() {
                       onClick={() => handleWithdraw(app.id)}
                       className="btn btn-ghost btn-sm text-red-600 hover:text-red-700"
                     >
-                      Withdraw
+                      {t('applications.withdraw')}
                     </button>
                   )}
                 </div>
@@ -163,7 +165,7 @@ export default function ApplicationsPage() {
               {app.interviewDate && (
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <p className="text-sm text-primary-600 font-medium">
-                    Interview scheduled: {new Date(app.interviewDate).toLocaleString()}
+                    {`${t('applications.interview')} ${new Date(app.interviewDate).toLocaleString()}`}
                   </p>
                 </div>
               )}
@@ -176,11 +178,11 @@ export default function ApplicationsPage() {
       {total > 10 && (
         <div className="flex items-center justify-center gap-2 mt-8">
           <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn btn-secondary btn-sm">
-            Previous
+            {t('applications.previous')}
           </button>
           <span className="text-sm text-gray-500">Page {page} of {Math.ceil(total / 10)}</span>
           <button onClick={() => setPage(p => p + 1)} disabled={page >= Math.ceil(total / 10)} className="btn btn-secondary btn-sm">
-            Next
+            {t('applications.next')}
           </button>
         </div>
       )}

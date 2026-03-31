@@ -6,11 +6,13 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { JOB_TYPES, WORK_MODELS, EXPERIENCE_LEVELS } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n';
 
 export default function JobDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useI18n();
   const [job, setJob] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -52,14 +54,14 @@ export default function JobDetailPage() {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success('Application submitted successfully!');
+        toast.success(String(t('jobDetail.toasts.applied')));
         setJob({ ...job, hasApplied: true });
         setShowApplyModal(false);
       } else {
-        toast.error(data.error || 'Failed to apply');
+        toast.error(data.error || String(t('jobDetail.toasts.failed')));
       }
     } catch (err) {
-      toast.error('Something went wrong');
+      toast.error(String(t('jobDetail.toasts.failed')));
     } finally {
       setApplying(false);
     }
@@ -80,19 +82,19 @@ export default function JobDetailPage() {
       const data = await res.json();
       if (data.success) {
         setJob({ ...job, isSaved: data.data.saved });
-        toast.success(data.data.saved ? 'Job saved!' : 'Job unsaved');
+        toast.success(data.data.saved ? String(t('jobDetail.toasts.saved')) : String(t('jobDetail.toasts.unsaved')));
       }
     } catch (err) {
-      toast.error('Failed to save job');
+      toast.error(String(t('jobDetail.toasts.saveFailed')));
     }
   };
 
   const formatSalary = (min: number | null, max: number | null) => {
-    if (!min && !max) return 'Not specified';
+    if (!min && !max) return String(t('jobDetail.notSpecified'));
     const fmt = (n: number) => `$${n.toLocaleString()}`;
-    if (min && max) return `${fmt(min)} - ${fmt(max)} / year`;
-    if (min) return `From ${fmt(min)} / year`;
-    return `Up to ${fmt(max!)} / year`;
+    if (min && max) return `${fmt(min)} - ${fmt(max)} ${t('jobDetail.perYear')}`;
+    if (min) return `From ${fmt(min)} ${t('jobDetail.perYear')}`;
+    return `Up to ${fmt(max!)} ${t('jobDetail.perYear')}`;
   };
 
   if (isLoading) {
@@ -121,7 +123,7 @@ export default function JobDetailPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to jobs
+          {t('jobDetail.backToJobs')}
         </Link>
 
         {/* Header */}
@@ -137,9 +139,9 @@ export default function JobDetailPage() {
 
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                {job.isFeatured && <span className="badge badge-premium">Featured</span>}
-                {job.isExclusive && <span className="badge badge-accent">Premium Only</span>}
-                {job.isUrgent && <span className="badge badge-danger">Urgent</span>}
+                {job.isFeatured && <span className="badge badge-premium">{t('jobDetail.badges.featured')}</span>}
+                {job.isExclusive && <span className="badge badge-accent">{t('jobDetail.badges.premium')}</span>}
+                {job.isUrgent && <span className="badge badge-danger">{t('jobDetail.badges.urgent')}</span>}
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{job.title}</h1>
               <Link href={`/companies/${job.company.id}`} className="text-lg text-primary-600 hover:text-primary-700 mt-1 block">
@@ -175,27 +177,27 @@ export default function JobDetailPage() {
                 <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Applied
+                {t('jobDetail.applied')}
               </div>
             ) : (
               <button
                 onClick={() => setShowApplyModal(true)}
                 className="btn btn-primary btn-lg"
               >
-                Apply Now
+                {t('jobDetail.applyNow')}
               </button>
             )}
             <button onClick={handleSave} className="btn btn-secondary">
               <svg className="w-5 h-5 mr-2" fill={job.isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
-              {job.isSaved ? 'Saved' : 'Save'}
+              {job.isSaved ? t('jobDetail.saved') : t('jobDetail.save')}
             </button>
             <button className="btn btn-ghost">
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
-              Share
+              {t('jobDetail.share')}
             </button>
           </div>
         </div>
@@ -205,7 +207,7 @@ export default function JobDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Description */}
             <div className="card p-6 sm:p-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">About this role</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('jobDetail.aboutRole')}</h2>
               <div className="prose prose-sm max-w-none text-gray-600 whitespace-pre-wrap">
                 {job.description}
               </div>
@@ -214,7 +216,7 @@ export default function JobDetailPage() {
             {/* Requirements */}
             {job.requirements?.length > 0 && (
               <div className="card p-6 sm:p-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Requirements</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('jobDetail.requirements')}</h2>
                 <ul className="space-y-2">
                   {job.requirements.map((req: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
@@ -231,7 +233,7 @@ export default function JobDetailPage() {
             {/* Responsibilities */}
             {job.responsibilities?.length > 0 && (
               <div className="card p-6 sm:p-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Responsibilities</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('jobDetail.responsibilities')}</h2>
                 <ul className="space-y-2">
                   {job.responsibilities.map((resp: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
@@ -248,7 +250,7 @@ export default function JobDetailPage() {
             {/* Skills */}
             {job.skills?.length > 0 && (
               <div className="card p-6 sm:p-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Skills</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('jobDetail.skills')}</h2>
                 <div className="flex flex-wrap gap-2">
                   {job.skills.map((skill: string) => (
                     <span key={skill} className="px-3 py-1.5 bg-primary-50 text-primary-700 text-sm font-medium rounded-lg">
@@ -264,40 +266,40 @@ export default function JobDetailPage() {
           <div className="space-y-6">
             {/* Salary & details */}
             <div className="card p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Job Details</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('jobDetail.jobDetails')}</h3>
               <dl className="space-y-3">
                 <div>
-                  <dt className="text-xs text-gray-500 uppercase tracking-wide">Salary</dt>
+                  <dt className="text-xs text-gray-500 uppercase tracking-wide">{t('jobDetail.salary')}</dt>
                   <dd className="text-sm font-semibold text-green-600 mt-0.5">
                     {formatSalary(job.salaryMin, job.salaryMax)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-gray-500 uppercase tracking-wide">Job Type</dt>
+                  <dt className="text-xs text-gray-500 uppercase tracking-wide">{t('jobDetail.jobType')}</dt>
                   <dd className="text-sm text-gray-900 mt-0.5">
                     {JOB_TYPES.find((t) => t.value === job.jobType)?.label}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-gray-500 uppercase tracking-wide">Work Model</dt>
+                  <dt className="text-xs text-gray-500 uppercase tracking-wide">{t('jobDetail.workModel')}</dt>
                   <dd className="text-sm text-gray-900 mt-0.5">
                     {WORK_MODELS.find((m) => m.value === job.workModel)?.label}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-gray-500 uppercase tracking-wide">Experience</dt>
+                  <dt className="text-xs text-gray-500 uppercase tracking-wide">{t('jobDetail.experience')}</dt>
                   <dd className="text-sm text-gray-900 mt-0.5">
                     {EXPERIENCE_LEVELS.find((l) => l.value === job.experienceLevel)?.label}
                   </dd>
                 </div>
                 {job.industry && (
                   <div>
-                    <dt className="text-xs text-gray-500 uppercase tracking-wide">Industry</dt>
+                    <dt className="text-xs text-gray-500 uppercase tracking-wide">{t('jobDetail.industry')}</dt>
                     <dd className="text-sm text-gray-900 mt-0.5">{job.industry}</dd>
                   </div>
                 )}
                 <div>
-                  <dt className="text-xs text-gray-500 uppercase tracking-wide">Posted</dt>
+                  <dt className="text-xs text-gray-500 uppercase tracking-wide">{t('jobDetail.posted')}</dt>
                   <dd className="text-sm text-gray-900 mt-0.5">
                     {new Date(job.createdAt).toLocaleDateString('en-US', {
                       month: 'long',
@@ -312,7 +314,7 @@ export default function JobDetailPage() {
             {/* Benefits */}
             {job.benefits?.length > 0 && (
               <div className="card p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Benefits</h3>
+                <h3 className="font-semibold text-gray-900 mb-4">{t('jobDetail.benefits')}</h3>
                 <ul className="space-y-2">
                   {job.benefits.map((benefit: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
@@ -328,12 +330,12 @@ export default function JobDetailPage() {
 
             {/* Company card */}
             <div className="card p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">About {job.company.name}</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{`${t('jobDetail.about')} ${job.company.name}`}</h3>
               {job.company.description && (
                 <p className="text-sm text-gray-600 mb-4 line-clamp-4">{job.company.description}</p>
               )}
               <Link href={`/companies/${job.company.id}`} className="btn btn-secondary w-full text-sm">
-                View Company Profile
+                {t('jobDetail.viewCompany')}
               </Link>
             </div>
           </div>
@@ -344,16 +346,16 @@ export default function JobDetailPage() {
       {showApplyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="card p-6 sm:p-8 max-w-lg w-full animate-slide-up">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Apply to {job.title}</h2>
-            <p className="text-sm text-gray-500 mb-6">at {job.company.name}</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{t('jobDetail.applyModal.title')} {job.title}</h2>
+            <p className="text-sm text-gray-500 mb-6">{t('jobDetail.applyModal.at')} {job.company.name}</p>
 
             <div className="mb-6">
-              <label className="label">Cover Letter (optional)</label>
+              <label className="label">{t('jobDetail.applyModal.coverLetter')}</label>
               <textarea
                 value={coverLetter}
                 onChange={(e) => setCoverLetter(e.target.value)}
                 className="input min-h-[120px]"
-                placeholder="Tell the employer why you are a great fit..."
+                placeholder={String(t('jobDetail.applyModal.coverLetterPlaceholder'))}
               />
             </div>
 
@@ -363,13 +365,13 @@ export default function JobDetailPage() {
                 disabled={applying}
                 className="btn btn-primary flex-1"
               >
-                {applying ? 'Submitting...' : 'Submit Application'}
+                {applying ? t('jobDetail.applyModal.submitting') : t('jobDetail.applyModal.submit')}
               </button>
               <button
                 onClick={() => setShowApplyModal(false)}
                 className="btn btn-secondary"
               >
-                Cancel
+                {t('jobDetail.applyModal.cancel')}
               </button>
             </div>
           </div>

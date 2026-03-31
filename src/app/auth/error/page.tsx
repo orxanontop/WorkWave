@@ -2,16 +2,18 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
 
 export default function AuthErrorPage() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
+  const { t } = useI18n();
 
   const errorMessages: Record<string, string> = {
-    Configuration: 'There is a problem with the server configuration.',
-    AccessDenied: 'You do not have permission to access this resource.',
-    Verification: 'The verification link may have expired or already been used.',
-    Default: 'An error occurred during authentication.',
+    Configuration: t('auth.error.configuration') as string,
+    AccessDenied: t('auth.error.accessDenied') as string,
+    Verification: t('auth.error.verification') as string,
+    Default: t('auth.error.default') as string,
   };
 
   const message = error ? errorMessages[error] || errorMessages.Default : errorMessages.Default;
@@ -24,11 +26,11 @@ export default function AuthErrorPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Authentication Error</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('auth.error.title')}</h1>
         <p className="text-gray-500 mb-8">{message}</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/auth/login" className="btn btn-primary">Try Again</Link>
-          <Link href="/" className="btn btn-secondary">Go Home</Link>
+          <Link href="/auth/login" className="btn btn-primary">{t('auth.error.tryAgain')}</Link>
+          <Link href="/" className="btn btn-secondary">{t('auth.error.goHome')}</Link>
         </div>
       </div>
     </div>
