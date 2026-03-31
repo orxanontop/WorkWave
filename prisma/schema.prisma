@@ -89,6 +89,7 @@ model User {
   reviews           CompanyReview[]
   notifications     Notification[]
   subscriptions     Subscription[]
+  payments          Payment[]
 }
 
 model Account {
@@ -176,7 +177,7 @@ model Company {
   rating            Float               @default(0)
   reviewCount       Int                 @default(0)
   isVerified        Boolean             @default(false)
-  ownerId           String?
+  ownerId           String?             @unique
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 

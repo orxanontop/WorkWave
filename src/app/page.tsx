@@ -3,76 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { APP_NAME, APP_TAGLINE, SUBSCRIPTION_PLANS } from '@/lib/constants';
-
-const STATS = [
-  { label: 'Active Jobs', value: '10,000+' },
-  { label: 'Companies', value: '2,500+' },
-  { label: 'Hired This Month', value: '850+' },
-  { label: 'Cities', value: '50+' },
-];
-
-const FEATURES = [
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    ),
-    title: 'Hyper-Local Search',
-    description: 'Find jobs near you with precise location-based filtering. No more sifting through irrelevant results.',
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-    ),
-    title: '1-Click Apply',
-    description: 'Apply to jobs instantly with your saved profile. No lengthy forms, no friction.',
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
-    ),
-    title: 'Verified Employers',
-    description: 'Every company is verified so you can apply with confidence. No scams, no fake listings.',
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-      </svg>
-    ),
-    title: 'Track Applications',
-    description: 'See exactly where you stand with every application. Real-time status updates.',
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
-    ),
-    title: 'Direct Messaging',
-    description: 'Chat directly with employers and recruiters. No more playing phone tag.',
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-      </svg>
-    ),
-    title: 'AI Resume Tips',
-    description: 'Get smart suggestions to improve your resume and stand out from the crowd.',
-  },
-];
+import { APP_NAME, SUBSCRIPTION_PLANS } from '@/lib/constants';
+import { useI18n } from '@/lib/i18n';
 
 export default function HomePage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
+  const { t } = useI18n();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +19,70 @@ export default function HomePage() {
     if (location) params.set('city', location);
     router.push(`/jobs?${params.toString()}`);
   };
+
+  const STATS = [
+    { label: t('stats.activeJobs'), value: '10,000+' },
+    { label: t('stats.companies'), value: '2,500+' },
+    { label: t('stats.hiredThisMonth'), value: '850+' },
+    { label: t('stats.cities'), value: '50+' },
+  ];
+
+  const FEATURES = [
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      ),
+      title: t('features.localSearch.title'),
+      description: t('features.localSearch.description'),
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+      title: t('features.oneClick.title'),
+      description: t('features.oneClick.description'),
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      ),
+      title: t('features.verified.title'),
+      description: t('features.verified.description'),
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      ),
+      title: t('features.tracking.title'),
+      description: t('features.tracking.description'),
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      ),
+      title: t('features.messaging.title'),
+      description: t('features.messaging.description'),
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      ),
+      title: t('features.aiTips.title'),
+      description: t('features.aiTips.description'),
+    },
+  ];
 
   return (
     <div className="animate-fade-in">
@@ -92,16 +94,16 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-sm font-medium mb-6">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              10,000+ active job listings in your area
+              {t('hero.badge')}
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-balance">
-              Find Your Next Opportunity,{' '}
-              <span className="text-amber-300">Locally</span>
+              {t('hero.title')}{' '}
+              <span className="text-amber-300">{t('hero.titleAccent')}</span>
             </h1>
 
             <p className="text-lg sm:text-xl text-primary-100 mb-10 max-w-2xl mx-auto text-balance">
-              {APP_TAGLINE}. The fastest way to connect with employers in your city.
+              {t('hero.subtitle')}
             </p>
 
             {/* Search Form */}
@@ -113,7 +115,7 @@ export default function HomePage() {
                   </svg>
                   <input
                     type="text"
-                    placeholder="Job title, keyword, or company"
+                    placeholder={t('hero.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
@@ -126,21 +128,21 @@ export default function HomePage() {
                   </svg>
                   <input
                     type="text"
-                    placeholder="City or zip code"
+                    placeholder={t('hero.locationPlaceholder')}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
                   />
                 </div>
                 <button type="submit" className="btn btn-primary btn-lg px-8 sm:rounded-xl">
-                  Search
+                  {t('hero.search')}
                 </button>
               </div>
             </form>
 
             {/* Quick links */}
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-              {['Remote', 'Engineering', 'Marketing', 'Design', 'Sales'].map((tag) => (
+              {[t('hero.remote'), t('hero.engineering'), t('hero.marketing'), t('hero.design'), t('hero.sales')].map((tag) => (
                 <Link
                   key={tag}
                   href={`/jobs?search=${tag}`}
@@ -173,10 +175,10 @@ export default function HomePage() {
         <div className="container-app">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Everything you need to land your dream job
+              {t('features.title')}
             </h2>
             <p className="text-lg text-gray-500">
-              Powerful tools designed to make your job search faster and more effective.
+              {t('features.subtitle')}
             </p>
           </div>
 
@@ -199,53 +201,59 @@ export default function HomePage() {
         <div className="container-app">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Simple, transparent pricing
+              {t('pricing.title')}
             </h2>
             <p className="text-lg text-gray-500">
-              Start free, upgrade when you are ready. No hidden fees.
+              {t('pricing.subtitle')}
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {Object.entries(SUBSCRIPTION_PLANS).map(([key, plan]) => (
-              <div
-                key={key}
-                className={`card p-8 relative ${
-                  'popular' in plan ? 'border-primary-500 border-2 shadow-lg' : ''
-                }`}
-              >
-                {'popular' in plan && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full">
-                    Most Popular
-                  </div>
-                )}
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">
-                    ${plan.price}
-                  </span>
-                  {'period' in plan && plan.period && (
-                    <span className="text-gray-500 text-sm">{plan.period}</span>
-                  )}
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
-                      <svg className="w-5 h-5 text-green-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/auth/register"
-                  className={`btn w-full ${'popular' in plan ? 'btn-primary' : 'btn-secondary'}`}
-                >
-                  Get Started
-                </Link>
+            <div className="card p-8 relative">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{t('pricing.free.name')}</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-gray-900">$0</span>
               </div>
-            ))}
+              <ul className="space-y-3 mb-8">
+                {(t('pricing.free.features') as unknown as string[]).map((feature: string) => (
+                  <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
+                    <svg className="w-5 h-5 text-green-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth/register" className="btn btn-secondary w-full">
+                {t('pricing.getStarted')}
+              </Link>
+            </div>
+
+            <div className="card p-8 relative border-primary-500 border-2 shadow-lg">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full">
+                {t('pricing.premium.badge')}
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{t('pricing.premium.name')}</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-gray-900">
+                  $9.99
+                </span>
+                <span className="text-gray-500 text-sm">{t('pricing.premium.period')}</span>
+              </div>
+              <ul className="space-y-3 mb-8">
+                {(t('pricing.premium.features') as unknown as string[]).map((feature: string) => (
+                  <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
+                    <svg className="w-5 h-5 text-green-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth/register" className="btn btn-primary w-full">
+                {t('pricing.getStarted')}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -254,17 +262,17 @@ export default function HomePage() {
       <section className="section bg-gradient-to-r from-primary-600 to-accent-600 text-white">
         <div className="container-app text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Ready to find your next opportunity?
+            {t('cta.title')}
           </h2>
           <p className="text-lg text-primary-100 mb-8 max-w-xl mx-auto">
-            Join thousands of job seekers who have already found their dream jobs through {APP_NAME}.
+            {t('cta.subtitle')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/register" className="btn bg-white text-primary-700 hover:bg-gray-100 btn-lg">
-              Create Free Account
+              {t('cta.createAccount')}
             </Link>
             <Link href="/jobs" className="btn bg-white/10 text-white hover:bg-white/20 btn-lg border border-white/30">
-              Browse Jobs
+              {t('cta.browseJobs')}
             </Link>
           </div>
         </div>
