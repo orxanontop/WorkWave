@@ -9,7 +9,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const { error, user } = await requireAuth(req);
-  if (error) return error;
+  if (error) {
+    console.error('Apply auth error:', await error.clone().json());
+    return error;
+  }
 
   if (user!.role !== 'JOB_SEEKER') {
     return apiError('Only job seekers can apply to jobs', 403);

@@ -12,12 +12,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'JobMarket - Find Your Next Opportunity, Locally',
+  title: 'WorkWave - Find Your Next Opportunity, Locally',
   description:
     'Hyper-local job marketplace connecting job seekers with local employers. Browse jobs, apply instantly, and get hired faster.',
   keywords: ['jobs', 'local jobs', 'employment', 'careers', 'hiring'],
   openGraph: {
-    title: 'JobMarket - Find Your Next Opportunity, Locally',
+    title: 'WorkWave - Find Your Next Opportunity, Locally',
     description: 'Hyper-local job marketplace connecting job seekers with local employers.',
     type: 'website',
   },

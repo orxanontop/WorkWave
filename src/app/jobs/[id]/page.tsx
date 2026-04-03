@@ -55,10 +55,14 @@ export default function JobDetailPage() {
         toast.success(String(t('jobDetail.toasts.applied')));
         setJob({ ...job, hasApplied: true });
         setShowApplyModal(false);
+        setCoverLetter('');
       } else {
-        toast.error(data.error || String(t('jobDetail.toasts.failed')));
+        const errorMsg = data?.error || String(t('jobDetail.toasts.failed'));
+        console.error('Apply error:', res.status, errorMsg);
+        toast.error(errorMsg);
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Apply exception:', err);
       toast.error(String(t('jobDetail.toasts.failed')));
     } finally {
       setApplying(false);

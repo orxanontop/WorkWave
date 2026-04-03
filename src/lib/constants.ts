@@ -1,4 +1,4 @@
-export const APP_NAME = 'JobMarket';
+export const APP_NAME = 'WorkWave';
 export const APP_TAGLINE = 'Find your next opportunity, locally';
 
 export const FREE_APPLICATIONS_LIMIT = 5;
