@@ -11,6 +11,8 @@ export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<any>({
@@ -121,10 +123,11 @@ export default function ProfilePage() {
   }
 
   return (
+    <div className={mounted ? 'animate-slide-up' : 'opacity-0'}>
     <div className="container-app py-8 max-w-3xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('profile.title')}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 animate-pop">{t('profile.title')}</h1>
           <p className="text-gray-500 mt-1">{t('profile.subtitle')}</p>
         </div>
         <button onClick={handleSave} disabled={isSaving} className="btn btn-primary">
@@ -134,7 +137,7 @@ export default function ProfilePage() {
 
       <div className="space-y-6">
         {/* Basic Info */}
-        <div className="card p-6 sm:p-8">
+        <div className="card p-6 sm:p-8 animate-slide-up opacity-0 stagger-1">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.basicInfo')}</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
@@ -199,7 +202,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Bio */}
-        <div className="card p-6 sm:p-8">
+        <div className="card p-6 sm:p-8 animate-slide-up opacity-0 stagger-2">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.about')}</h2>
           <textarea
             value={profile.bio}
@@ -210,7 +213,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Experience */}
-        <div className="card p-6 sm:p-8">
+        <div className="card p-6 sm:p-8 animate-slide-up opacity-0 stagger-3">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.experience')}</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
@@ -261,7 +264,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Skills */}
-        <div className="card p-6 sm:p-8">
+        <div className="card p-6 sm:p-8 animate-slide-up opacity-0 stagger-4">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.skills')}</h2>
           <div className="mb-4">
             <div className="flex gap-2">
@@ -314,7 +317,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Links */}
-        <div className="card p-6 sm:p-8">
+        <div className="card p-6 sm:p-8 animate-slide-up opacity-0 stagger-5">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.links')}</h2>
           <div className="space-y-4">
             <div>
@@ -351,7 +354,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Resume Upload placeholder */}
-        <div className="card p-6 sm:p-8">
+        <div className="card p-6 sm:p-8 animate-slide-up opacity-0 stagger-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.resume')}</h2>
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors cursor-pointer">
             <svg className="w-10 h-10 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,6 +372,7 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -11,6 +11,8 @@ import { useI18n } from '@/lib/i18n';
 export default function RegisterPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -62,10 +64,11 @@ export default function RegisterPage() {
   };
 
   return (
+    <div className={mounted ? 'animate-slide-up' : 'opacity-0'}>
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('auth.register.title')}</h1>
+          <h1 className="animate-pop text-3xl font-bold text-gray-900 mb-2">{t('auth.register.title')}</h1>
           <p className="text-gray-500">{t('auth.register.subtitle')}</p>
         </div>
 
@@ -171,6 +174,7 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
+    </div>
     </div>
   );
 }

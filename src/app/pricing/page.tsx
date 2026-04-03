@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -12,6 +12,8 @@ export default function PricingPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const handleSubscribe = async (planKey: string) => {
     if (!session) { router.push('/auth/register'); return; }
@@ -37,9 +39,9 @@ export default function PricingPage() {
   const isPremium = (session?.user as any)?.subscriptionStatus === 'ACTIVE';
 
   return (
-    <div className="container-app py-16">
+    <div className={`container-app py-16 ${mounted ? 'animate-slide-up' : 'opacity-0'}`}>
       <div className="text-center max-w-2xl mx-auto mb-16">
-        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">{t('pricing.title')}</h1>
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 animate-pop">{t('pricing.title')}</h1>
         <p className="text-lg text-gray-500">{t('pricing.subtitle')}</p>
         {isPremium && (
           <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-green-50 text-green-700 rounded-full text-sm font-medium">
@@ -50,8 +52,8 @@ export default function PricingPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {Object.entries(SUBSCRIPTION_PLANS).map(([key, plan]) => (
-          <div key={key} className={`card p-8 relative ${'popular' in plan ? 'border-primary-500 border-2 shadow-xl scale-[1.02]' : ''}`}>
+        {Object.entries(SUBSCRIPTION_PLANS).map(([key, plan], i) => (
+          <div key={key} className={`card p-8 relative hover-lift ${i === 0 ? 'animate-slide-left' : 'animate-slide-right'} opacity-0 ${'popular' in plan ? 'border-primary-500 border-2 shadow-xl scale-[1.02]' : ''}`}>
             {'popular' in plan && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary-600 text-white text-xs font-semibold rounded-full">
                 {t('pricing.premium.badge')}
@@ -95,8 +97,8 @@ export default function PricingPage() {
             { q: t('pricing.faq.payment.q'), a: t('pricing.faq.payment.a') },
             { q: t('pricing.faq.trial.q'), a: t('pricing.faq.trial.a') },
             { q: t('pricing.faq.priority.q'), a: t('pricing.faq.priority.a') },
-          ].map(({ q, a }) => (
-            <div key={String(q)} className="card p-6">
+          ].map(({ q, a }, i) => (
+            <div key={String(q)} className="card p-6 animate-slide-up opacity-0" style={{ animationDelay: `${i * 80}ms` }}>
               <h3 className="font-semibold text-gray-900 mb-2">{q}</h3>
               <p className="text-sm text-gray-500">{a}</p>
             </div>

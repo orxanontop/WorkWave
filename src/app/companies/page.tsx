@@ -6,6 +6,8 @@ import { useI18n } from '@/lib/i18n';
 
 export default function CompaniesPage() {
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [companies, setCompanies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -29,8 +31,9 @@ export default function CompaniesPage() {
   };
 
   return (
+    <div className={mounted ? 'animate-slide-up' : 'opacity-0'}>
     <div className="container-app py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('companies.title')}</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2 animate-pop">{t('companies.title')}</h1>
       <p className="text-gray-500 mb-8">{total} {t('companies.hiring')}</p>
 
       <div className="mb-6">
@@ -49,8 +52,8 @@ export default function CompaniesPage() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {companies.map((company) => (
-            <Link key={company.id} href={`/companies/${company.id}`} className="card-hover p-6">
+          {companies.map((company, i) => (
+            <Link key={company.id} href={`/companies/${company.id}`} className="card-hover p-6 animate-slide-up opacity-0" style={{ animationDelay: `${i * 60}ms` }}>
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
                   {company.logo ? <img src={company.logo} alt="" className="w-full h-full object-cover"/> : <span className="text-xl font-bold text-gray-400">{company.name[0]}</span>}
@@ -68,6 +71,7 @@ export default function CompaniesPage() {
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }

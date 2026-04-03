@@ -11,6 +11,8 @@ export default function AdminUsersPage() {
   const { t } = useI18n();
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -52,13 +54,14 @@ export default function AdminUsersPage() {
   };
 
   return (
+    <div className={mounted ? 'animate-slide-up' : 'opacity-0'}>
     <div className="container-app py-8">
       <div className="flex items-center gap-2 mb-2">
         <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-700">Admin</Link>
         <span className="text-gray-300">/</span>
         <span className="text-sm font-medium text-gray-900">Users</span>
       </div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{(t('admin.users.title') as string).replace('{total}', String(total))}</h1>
+      <h1 className="animate-pop text-2xl font-bold text-gray-900 mb-6">{(t('admin.users.title') as string).replace('{total}', String(total))}</h1>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder={t('admin.users.searchPlaceholder') as string} className="input flex-1" />
@@ -133,6 +136,7 @@ export default function AdminUsersPage() {
           <button onClick={() => setPage(p => p+1)} disabled={page >= Math.ceil(total/20)} className="btn btn-secondary btn-sm">{t('admin.next') as string}</button>
         </div>
       )}
+    </div>
     </div>
   );
 }

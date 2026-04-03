@@ -10,6 +10,8 @@ export default function MessagesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [conversations, setConversations] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [activeChat, setActiveChat] = useState<string | null>(null);
@@ -71,8 +73,9 @@ export default function MessagesPage() {
   const userId = (session?.user as any)?.id;
 
   return (
+    <div className={mounted ? 'animate-slide-up' : 'opacity-0'}>
     <div className="container-app py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{String(t('messages.title'))}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6 animate-pop">{String(t('messages.title'))}</h1>
 
       {(session?.user as any)?.subscriptionStatus !== 'ACTIVE' && (session?.user as any)?.role === 'JOB_SEEKER' ? (
         <div className="card p-12 text-center">
@@ -164,6 +167,7 @@ export default function MessagesPage() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

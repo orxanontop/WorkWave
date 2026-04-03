@@ -12,6 +12,8 @@ export default function SavedJobsPage() {
   const { status } = useSession();
   const router = useRouter();
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [saved, setSaved] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -50,8 +52,9 @@ export default function SavedJobsPage() {
   };
 
   return (
+    <div className={mounted ? 'animate-slide-up' : 'opacity-0'}>
     <div className="container-app py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">{String(t('saved.title'))}</h1>
+      <h1 className="animate-pop text-2xl font-bold text-gray-900 mb-2">{String(t('saved.title'))}</h1>
       <p className="text-gray-500 mb-8">{saved.length} {String(t('saved.savedCount'))}</p>
 
       {isLoading ? (
@@ -65,8 +68,8 @@ export default function SavedJobsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {saved.map(({ job, createdAt }) => (
-            <div key={job.id} className="card-hover p-5">
+          {saved.map(({ job, createdAt }, i) => (
+            <div key={job.id} className="animate-slide-up opacity-0 card-hover p-5" style={{ animationDelay: `${i * 60}ms` }}>
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
                   {job.company?.logo ? <img src={job.company.logo} alt="" className="w-full h-full object-cover"/> : <span className="text-lg font-bold text-gray-400">{job.company?.name?.[0]}</span>}
@@ -88,6 +91,7 @@ export default function SavedJobsPage() {
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }

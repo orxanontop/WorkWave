@@ -30,10 +30,16 @@ interface Job {
   };
 }
 
+
 export default function JobsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,6 +121,7 @@ export default function JobsPage() {
   };
 
   return (
+    <div className={mounted ? 'animate-slide-up' : 'opacity-0'}>
     <div className="container-app py-8">
       {/* Search bar */}
       <div className="card p-4 mb-6">
@@ -143,7 +150,7 @@ export default function JobsPage() {
               className="input pl-10"
             />
           </div>
-          <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary sm:w-auto">
+          <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary sm:w-auto animate-scale">
             <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
@@ -235,7 +242,7 @@ export default function JobsPage() {
 
       {/* Results header */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 animate-pop">
           {isLoading ? t('jobs.searching') : `${total} ${t('jobs.jobsFound')}`}
         </p>
         <select
@@ -269,9 +276,9 @@ export default function JobsPage() {
             <p className="text-gray-500 text-sm">{t('jobs.noJobsDesc')}</p>
           </div>
         ) : (
-          jobs.map((job) => (
+          jobs.map((job, i) => (
             <Link key={job.id} href={`/jobs/${job.id}`} className="block">
-              <div className={`card-hover p-6 ${job.isFeatured ? 'border-l-4 border-l-primary-500' : ''}`}>
+              <div className={`card-hover p-6 animate-slide-up opacity-0 ${job.isFeatured ? 'border-l-4 border-l-primary-500' : ''}`} style={{ animationDelay: `${i * 60}ms` }}>
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                   {/* Company logo */}
                   <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
@@ -377,6 +384,7 @@ export default function JobsPage() {
           </button>
         </div>
       )}
+    </div>
     </div>
   );
 }

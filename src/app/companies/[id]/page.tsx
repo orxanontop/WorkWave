@@ -9,6 +9,8 @@ import { useI18n } from '@/lib/i18n';
 export default function CompanyDetailPage() {
   const { t } = useI18n();
   const { id } = useParams();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [company, setCompany] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,9 +36,10 @@ export default function CompanyDetailPage() {
   };
 
   return (
+    <div className={mounted ? 'animate-slide-up' : 'opacity-0'}>
     <div className="container-app py-8">
       {/* Header */}
-      <div className="card p-6 sm:p-8 mb-8">
+      <div className="card p-6 sm:p-8 mb-8 animate-slide-up stagger-1 opacity-0">
         <div className="flex flex-col sm:flex-row sm:items-start gap-6">
           <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
             {company.logo ? <img src={company.logo} alt="" className="w-full h-full object-cover"/> : <span className="text-3xl font-bold text-gray-400">{company.name[0]}</span>}
@@ -125,6 +128,7 @@ export default function CompanyDetailPage() {
           </div>
         </>
       )}
+    </div>
     </div>
   );
 }

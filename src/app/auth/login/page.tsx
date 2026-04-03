@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -11,6 +11,8 @@ import { useI18n } from '@/lib/i18n';
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,13 +44,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+      <div className={`w-full max-w-md ${mounted ? 'animate-slide-up' : 'opacity-0'}`}>
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('auth.login.title')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 animate-pop">{t('auth.login.title')}</h1>
           <p className="text-gray-500">{t('auth.login.subtitle')}</p>
         </div>
 
-        <div className="card p-8">
+        <div className="card p-8 animate-slide-up stagger-1 opacity-0">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label">{t('auth.login.email')}</label>
@@ -95,7 +97,7 @@ export default function LoginPage() {
 
           {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
             <>
-              <div className="relative my-6">
+              <div className="relative my-6 animate-slide-up stagger-2 opacity-0">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200" />
                 </div>
@@ -106,7 +108,7 @@ export default function LoginPage() {
 
               <button
                 onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-                className="btn btn-secondary w-full"
+                className="btn btn-secondary w-full animate-slide-up stagger-2 opacity-0"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -119,7 +121,7 @@ export default function LoginPage() {
             </>
           )}
 
-          <p className="mt-6 text-center text-sm text-gray-500">
+          <p className="mt-6 text-center text-sm text-gray-500 animate-slide-up stagger-3 opacity-0">
             {t('auth.login.noAccount')}{' '}
             <Link href="/auth/register" className="text-primary-600 font-medium hover:text-primary-700">
               {t('auth.login.signUpFree')}

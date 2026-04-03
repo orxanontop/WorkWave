@@ -23,6 +23,9 @@ export default function DashboardPage() {
   const [recentApplications, setRecentApplications] = useState<any[]>([]);
   const [recommendedJobs, setRecommendedJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -96,11 +99,11 @@ export default function DashboardPage() {
     : Math.max(0, FREE_APPLICATIONS_LIMIT - (stats?.monthlyApplications || 0));
 
   return (
-    <div className="container-app py-8">
+    <div className={`container-app py-8 ${mounted ? 'animate-slide-up' : 'opacity-0'}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 animate-pop">
             {(session?.user as any)?.name ? `${t('dashboard.welcomeName')} ${(session.user as any).name}` : t('dashboard.welcome')}
           </h1>
           <p className="text-gray-500 mt-1">{t('dashboard.subtitle')}</p>
@@ -125,7 +128,7 @@ export default function DashboardPage() {
 
       {/* Premium banner */}
       {!isPremium && userRole === 'JOB_SEEKER' && (
-        <div className="card bg-gradient-to-r from-primary-50 to-accent-50 border-primary-200 p-6 mb-8">
+        <div className="card bg-gradient-to-r from-primary-50 to-accent-50 border-primary-200 p-6 mb-8 animate-slide-up stagger-2 opacity-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -151,62 +154,31 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500">{t('dashboard.stats.applications')}</span>
-            <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-              <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+        {[
+          { label: t('dashboard.stats.applications'), value: stats?.applicationCount || 0, sub: `${stats?.monthlyApplications || 0} ${t('dashboard.stats.thisMonth')}`, color: 'primary' },
+          { label: t('dashboard.stats.remaining'), value: remainingApps, sub: isPremium ? t('dashboard.stats.premiumPlan') : t('dashboard.stats.applicationsLeft'), color: 'green' },
+          { label: t('dashboard.stats.profileViews'), value: stats?.profileViews || 0, sub: t('dashboard.stats.totalViews'), color: 'purple' },
+          { label: t('dashboard.stats.plan'), value: isPremium ? t('dashboard.premium') : t('dashboard.free'), sub: isPremium ? t('dashboard.stats.active') : t('dashboard.stats.upgradeAvailable'), color: 'amber' },
+        ].map((stat, i) => (
+          <div key={i} className={`card p-5 animate-slide-up opacity-0`} style={{ animationDelay: `${i * 80}ms` }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-500">{stat.label}</span>
+              <div className={`w-8 h-8 rounded-lg bg-${stat.color}-50 flex items-center justify-center`}>
+                <svg className={`w-4 h-4 text-${stat.color}-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {i === 0 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />}
+                  {i === 1 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />}
+                  {i === 2 && <>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </>}
+                  {i === 3 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />}
+                </svg>
+              </div>
             </div>
+            <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+            <p className="text-xs text-gray-400 mt-1">{stat.sub}</p>
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats?.applicationCount || 0}</div>
-          <p className="text-xs text-gray-400 mt-1">{stats?.monthlyApplications || 0} {t('dashboard.stats.thisMonth')}</p>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500">{t('dashboard.stats.remaining')}</span>
-            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-gray-900">{remainingApps}</div>
-          <p className="text-xs text-gray-400 mt-1">
-            {isPremium ? t('dashboard.stats.premiumPlan') : t('dashboard.stats.applicationsLeft')}
-          </p>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500">{t('dashboard.stats.profileViews')}</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-              <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-gray-900">{stats?.profileViews || 0}</div>
-          <p className="text-xs text-gray-400 mt-1">{t('dashboard.stats.totalViews')}</p>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500">{t('dashboard.stats.plan')}</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-              <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-gray-900">{isPremium ? t('dashboard.premium') : t('dashboard.free')}</div>
-          <p className="text-xs text-gray-400 mt-1">
-            {isPremium ? t('dashboard.stats.active') : t('dashboard.stats.upgradeAvailable')}
-          </p>
-        </div>
+        ))}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -269,7 +241,7 @@ export default function DashboardPage() {
           {/* Quick actions */}
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.quickActions')}</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 animate-slide-up stagger-3 opacity-0">
               <Link href="/jobs" className="card-hover p-4 text-center">
                 <svg className="w-6 h-6 text-primary-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

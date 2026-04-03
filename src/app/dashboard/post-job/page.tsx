@@ -11,6 +11,8 @@ export default function PostJobPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [isLoading, setIsLoading] = useState(false);
   const [hasCompany, setHasCompany] = useState(true);
   const [companyForm, setCompanyForm] = useState({ name: '', description: '', industry: '', city: '', state: '', website: '' });
@@ -126,12 +128,13 @@ export default function PostJobPage() {
   }
 
   return (
+    <div className={mounted ? 'animate-slide-up' : 'opacity-0'}>
     <div className="container-app py-8 max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('postJob.title')}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2 animate-pop">{t('postJob.title')}</h1>
       <p className="text-gray-500 mb-8">{t('postJob.subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="card p-6 sm:p-8 space-y-4">
+        <div className="card p-6 sm:p-8 space-y-4 animate-slide-up opacity-0 stagger-1">
           <h2 className="text-lg font-semibold text-gray-900">{t('postJob.jobDetails')}</h2>
           <div>
             <label className="label">{t('postJob.jobTitle')}</label>
@@ -163,7 +166,7 @@ export default function PostJobPage() {
           </div>
         </div>
 
-        <div className="card p-6 sm:p-8 space-y-4">
+        <div className="card p-6 sm:p-8 space-y-4 animate-slide-up opacity-0 stagger-2">
           <h2 className="text-lg font-semibold text-gray-900">{t('postJob.locationSalary')}</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div><label className="label">{t('postJob.city')}</label><input type="text" value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="input" /></div>
@@ -174,7 +177,7 @@ export default function PostJobPage() {
         </div>
 
         {/* Requirements */}
-        <div className="card p-6 sm:p-8 space-y-3">
+        <div className="card p-6 sm:p-8 space-y-3 animate-slide-up opacity-0 stagger-3">
           <h2 className="text-lg font-semibold text-gray-900">{t('postJob.requirements')}</h2>
           {form.requirements.map((req, i) => (
             <div key={i} className="flex gap-2">
@@ -186,7 +189,7 @@ export default function PostJobPage() {
         </div>
 
         {/* Responsibilities */}
-        <div className="card p-6 sm:p-8 space-y-3">
+        <div className="card p-6 sm:p-8 space-y-3 animate-slide-up opacity-0 stagger-4">
           <h2 className="text-lg font-semibold text-gray-900">{t('postJob.responsibilities')}</h2>
           {form.responsibilities.map((resp, i) => (
             <div key={i} className="flex gap-2">
@@ -198,7 +201,7 @@ export default function PostJobPage() {
         </div>
 
         {/* Benefits */}
-        <div className="card p-6 sm:p-8 space-y-3">
+        <div className="card p-6 sm:p-8 space-y-3 animate-slide-up opacity-0 stagger-5">
           <h2 className="text-lg font-semibold text-gray-900">{t('postJob.benefits')}</h2>
           {form.benefits.map((ben, i) => (
             <div key={i} className="flex gap-2">
@@ -210,7 +213,7 @@ export default function PostJobPage() {
         </div>
 
         {/* Skills */}
-        <div className="card p-6 sm:p-8 space-y-3">
+        <div className="card p-6 sm:p-8 space-y-3 animate-slide-up opacity-0 stagger-6">
           <h2 className="text-lg font-semibold text-gray-900">{t('postJob.requiredSkills')}</h2>
           <div className="flex gap-2">
             <input type="text" value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !form.skills.includes(skillInput.trim())) { setForm({...form, skills: [...form.skills, skillInput.trim()]}); setSkillInput(''); }}}} className="input flex-1" placeholder={String(t('postJob.skillPlaceholder'))} />
@@ -230,6 +233,7 @@ export default function PostJobPage() {
           <button type="submit" disabled={isLoading} className="btn btn-primary btn-lg">{isLoading ? String(t('postJob.posting')) : String(t('postJob.postJob'))}</button>
         </div>
       </form>
+    </div>
     </div>
   );
 }

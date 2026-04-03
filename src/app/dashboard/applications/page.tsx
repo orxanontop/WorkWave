@@ -11,6 +11,8 @@ export default function ApplicationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useI18n();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [applications, setApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -71,7 +73,7 @@ export default function ApplicationsPage() {
   };
 
   return (
-    <div className="container-app py-8">
+    <div className={`container-app py-8 ${mounted ? 'animate-slide-up' : 'opacity-0'}`}>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('applications.title')}</h1>
