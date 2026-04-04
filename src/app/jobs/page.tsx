@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { JOB_TYPES, WORK_MODELS, EXPERIENCE_LEVELS, INDUSTRIES, SALARY_RANGES } from '@/lib/constants';
@@ -30,8 +30,7 @@ interface Job {
   };
 }
 
-
-export default function JobsPage() {
+function JobsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
@@ -386,5 +385,13 @@ export default function JobsPage() {
       )}
     </div>
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={<div className="container-app py-8"><div className="skeleton h-10 w-64 mb-4" /><div className="skeleton h-64 w-full" /></div>}>
+      <JobsContent />
+    </Suspense>
   );
 }

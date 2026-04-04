@@ -75,7 +75,7 @@ export async function PATCH(
   }
 
   // Employer can update status
-  if (['EMPLOYER', 'ADMIN'].includes(user!.role as string)) {
+  if (['EMPLOYER', 'RECRUITER', 'ADMIN'].includes(user!.role as string)) {
     if (application.job.company.ownerId !== user!.id && user!.role !== 'ADMIN') {
       return apiError('Not authorized', 403);
     }

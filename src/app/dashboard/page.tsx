@@ -94,6 +94,7 @@ export default function DashboardPage() {
 
   const isPremium = (session?.user as any)?.subscriptionStatus === 'ACTIVE';
   const userRole = (session?.user as any)?.role;
+  const isEmployer = ['EMPLOYER', 'RECRUITER'].includes(userRole);
   const remainingApps = isPremium
     ? t('dashboard.unlimited')
     : Math.max(0, FREE_APPLICATIONS_LIMIT - (stats?.monthlyApplications || 0));
@@ -104,7 +105,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 animate-pop">
-            {(session?.user as any)?.name ? `${t('dashboard.welcomeName')} ${(session.user as any).name}` : t('dashboard.welcome')}
+            {(session?.user as any)?.name ? `${t('dashboard.welcomeName')} ${(session?.user as any)?.name}` : t('dashboard.welcome')}
           </h1>
           <p className="text-gray-500 mt-1">{t('dashboard.subtitle')}</p>
         </div>
