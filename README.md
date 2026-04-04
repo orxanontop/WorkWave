@@ -1,6 +1,6 @@
-# JobMarket - Hyper-Local Job Marketplace
+# WorkWave - Hyper-Local Job Marketplace
 
-A production-ready, mobile-first job marketplace with freemium and subscription features.
+A production-ready, mobile-first job marketplace with freemium and subscription features, multilingual support (English, Azerbaijani, Russian), and full employer application management.
 
 ## Tech Stack
 
@@ -12,6 +12,8 @@ A production-ready, mobile-first job marketplace with freemium and subscription 
 | Cache | Redis 7 |
 | Auth | NextAuth.js (JWT + OAuth) |
 | Payments | Stripe (subscriptions + checkout) |
+| i18n | Custom i18n (en, az, ru) |
+| State | Zustand |
 | Deployment | Docker, Docker Compose |
 
 ## Quick Start
@@ -73,26 +75,30 @@ jobmarket/
 │   │   ├── api/               # API routes
 │   │   │   ├── auth/          # Auth endpoints
 │   │   │   ├── jobs/          # Jobs CRUD + apply
-│   │   │   ├── applications/  # Application tracking
+│   │   │   ├── applications/  # Application tracking & management
 │   │   │   ├── profile/       # User profile
 │   │   │   ├── companies/     # Company profiles
 │   │   │   ├── messages/      # Direct messaging
 │   │   │   ├── subscriptions/ # Stripe integration
 │   │   │   ├── saved/         # Saved jobs
 │   │   │   └── admin/         # Admin endpoints
-│   │   ├── auth/              # Auth pages
+│   │   ├── auth/              # Auth pages (login, register, error)
 │   │   ├── jobs/              # Job listing & detail
 │   │   ├── dashboard/         # User dashboard
+│   │   │   ├── page.tsx       # Dashboard home
+│   │   │   ├── profile/       # Profile editing
+│   │   │   ├── applications/  # Applications list (role-aware)
+│   │   │   │   └── [id]/      # Application detail & management
+│   │   │   ├── post-job/      # Post a job (employer)
+│   │   │   ├── saved/         # Saved jobs
+│   │   │   └── messages/      # Messaging (premium-gated)
 │   │   ├── companies/         # Company pages
 │   │   ├── admin/             # Admin panel
 │   │   └── pricing/           # Pricing page
 │   ├── components/
-│   │   ├── layout/            # Navbar, Footer
-│   │   ├── ui/                # Reusable UI
-│   │   ├── jobs/              # Job components
-│   │   ├── dashboard/         # Dashboard components
-│   │   └── admin/             # Admin components
-│   ├── hooks/                 # Custom React hooks
+│   │   └── layout/            # Navbar, Footer
+│   ├── hooks/
+│   │   └── useApi.ts          # Custom API hook
 │   └── lib/
 │       ├── api.ts             # API helpers (auth, rate limit, pagination)
 │       ├── auth.ts            # NextAuth configuration
@@ -100,7 +106,9 @@ jobmarket/
 │       ├── stripe.ts          # Stripe helpers + plans
 │       ├── validations.ts     # Zod schemas
 │       ├── constants.ts       # App constants
-│       └── store.ts           # Zustand store
+│       ├── store.ts           # Zustand store
+│       ├── i18n.tsx           # Internationalization (en, az, ru)
+│       └── theme.tsx          # Dark/light theme provider
 ├── docker-compose.yml
 ├── Dockerfile
 └── package.json
@@ -121,9 +129,9 @@ jobmarket/
 - `POST /api/jobs/[id]/apply` - Apply to job
 
 ### Applications
-- `GET /api/applications` - List user applications
+- `GET /api/applications` - List applications (role-aware: seekers see own, employers see their company's)
 - `GET /api/applications/[id]` - Get application detail
-- `PATCH /api/applications/[id]` - Update application status
+- `PATCH /api/applications/[id]` - Update status, notes, interview date
 
 ### Profile
 - `GET /api/profile` - Get current user profile
@@ -153,6 +161,48 @@ jobmarket/
 - `GET/PATCH /api/admin/users` - Manage users
 - `GET/PATCH /api/admin/jobs` - Manage jobs
 
+## Features
+
+### Job Seekers
+- Browse and search jobs with advanced filters (type, work model, experience, industry)
+- Apply to jobs with cover letter
+- Track application status in real-time
+- Save jobs for later review
+- Direct messaging with employers (premium)
+- Profile management with skills, experience, and resume
+- Priority application ranking (premium)
+
+### Employers & Recruiters
+- Create and manage company profiles
+- Post jobs with full details (requirements, responsibilities, benefits, skills)
+- View all applications to their company's jobs
+- Manage application pipeline with status updates:
+  - **Pending** - New application awaiting review
+  - **Reviewed** - Application has been reviewed
+  - **Shortlisted** - Candidate selected for further consideration
+  - **Interview** - Interview scheduled (with date picker)
+  - **Offered** - Job offer extended
+  - **Rejected** - Application declined
+- Add private employer notes to applications
+- Schedule interviews with datetime picker
+- View full applicant profiles (skills, experience, cover letter, links)
+- Priority-sorted applications (premium applicants appear first)
+- Application stats dashboard (pending, reviewed, shortlisted, interviews)
+
+### Admin
+- Platform analytics dashboard
+- User management (search, filter by role, activate/deactivate)
+- Job management (search, activate/deactivate, feature/unfeature)
+- Real-time stats (users, jobs, applications, revenue, premium users, companies)
+
+### General
+- **Multilingual** - English, Azerbaijani, Russian
+- **Dark/Light theme** - Toggle with persistence
+- **Role-based access control** - Job Seeker, Employer, Recruiter, Admin
+- **Responsive design** - Mobile-first, works on all screen sizes
+- **Rate limiting** - In-memory rate limiting on API endpoints
+- **Notifications** - In-app notifications for application updates
+
 ## Business Logic
 
 - Free users: 5 applications/month
@@ -162,6 +212,7 @@ jobmarket/
 - Premium applications sorted first in employer dashboard
 - Rate limiting on all API endpoints
 - Role-based access control (Job Seeker, Employer, Admin, Recruiter)
+- Messaging gated behind premium for job seekers; employers always have access
 
 ## Deployment
 
@@ -183,8 +234,12 @@ npm run lint         # Run ESLint
 npm run db:push      # Push schema to DB
 npm run db:seed      # Seed demo data
 npm run db:studio    # Open Prisma Studio
+npm run db:generate  # Generate Prisma client
 npm run docker:up    # Start Docker services
 npm run docker:down  # Stop Docker services
+npm run test         # Run Jest tests
+npm run test:watch   # Run tests in watch mode
+npm run test:e2e     # Run Playwright E2E tests
 ```
 
 ## Architecture Decisions
@@ -195,4 +250,5 @@ npm run docker:down  # Stop Docker services
 4. **Stripe** - Subscription management with webhook handling
 5. **Zustand** - Lightweight state management for client state
 6. **Zod** - Runtime validation for API inputs
-7. **In-memory rate limiting** - Works for single-instance; swap for Redis in production cluster
+7. **Custom i18n** - Inline translations with locale persistence (no external library needed)
+8. **In-memory rate limiting** - Works for single-instance; swap for Redis in production cluster
