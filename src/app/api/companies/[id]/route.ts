@@ -1,11 +1,15 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { apiSuccess, apiError } from '@/lib/api';
+import { apiResponse, apiError, rateLimit } from '@/lib/api';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const rl = await rateLimit(req, 60);
+  if (!rl.allowed) return rl.response!;
+
   const company = await prisma.company.findUnique({
     where: { id: params.id },
     include: {
@@ -29,7 +33,7 @@ export async function GET(
     },
   });
 
-  if (!company) return apiError('Company not found', 404);
+  if (!company) return apiError('Company not found', 404, 'NOT_FOUND');
 
-  return apiSuccess(company);
+  return apiResponse(company);
 }

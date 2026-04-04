@@ -2,11 +2,22 @@ import { NextAuthOptions } from 'next-auth';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
-import bcrypt from 'bcryptjs';
-import prisma from './prisma';
+import { hash, verify } from '@node-rs/bcrypt';
+import prisma, { basePrismaClient as prismaForAdapter } from './prisma';
+import { logger } from './logger';
+
+export { hash };
+
+export async function hashPassword(password: string, cost: number = 10): Promise<string> {
+  return hash(password, cost);
+}
+
+export async function verifyPassword(password: string, hashVal: string): Promise<boolean> {
+  return verify(hashVal, password);
+}
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prismaForAdapter) as any,
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -18,30 +29,24 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email and password are required');
         }
-
         const user = await prisma.user.findUnique({
           where: { email: credentials.email.toLowerCase() },
           include: { profile: true },
         });
-
         if (!user || !user.password) {
           throw new Error('Invalid email or password');
         }
-
         if (!user.isActive) {
           throw new Error('Account is deactivated');
         }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password);
+        const isValid = await verifyPassword(credentials.password, user.password);
         if (!isValid) {
           throw new Error('Invalid email or password');
         }
-
         await prisma.user.update({
           where: { id: user.id },
           data: { lastLoginAt: new Date() },
         });
-
         return {
           id: user.id,
           email: user.email,
@@ -82,13 +87,15 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  pages: {
-    signIn: '/auth/login',
-    error: '/auth/error',
-  },
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60,
-  },
+  pages: { signIn: '/auth/login', error: '/auth/error' },
+  session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
   secret: process.env.NEXTAUTH_SECRET,
+  events: {
+    signOut: async ({ token }) => {
+      logger.info({ userId: (token as any)?.id }, 'User signed out');
+    },
+    createUser: async ({ user }) => {
+      logger.info({ userId: user.id }, 'New user created');
+    },
+  },
 };

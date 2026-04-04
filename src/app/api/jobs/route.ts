@@ -1,21 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getPagination, apiSuccess, apiError, rateLimit, getClientIp, generateSlug } from '@/lib/api';
-import { requireAuth, requireRole } from '@/lib/api';
+import {
+  apiResponse,
+  apiError,
+  requireAuth,
+  requireRole,
+  getPagination,
+  paginationMeta,
+  generateSlug,
+  rateLimit,
+} from '@/lib/api';
 import { createJobSchema } from '@/lib/validations';
+import { sanitizeHtml, sanitizeStringArray } from '@/lib/sanitize';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
-  const ip = getClientIp(req);
-  if (!rateLimit(ip)) {
-    return apiError('Too many requests', 429);
-  }
+  const rl = await rateLimit(req, 100);
+  if (!rl.allowed) return rl.response!;
 
-  const { page, limit, skip } = getPagination(req.nextUrl.searchParams);
+  const { page, perPage, skip } = getPagination(req.nextUrl.searchParams);
   const params = req.nextUrl.searchParams;
 
-  const where: any = { isActive: true };
+  const where: Record<string, unknown> = { isActive: true };
 
-  // Search
   const search = params.get('search');
   if (search) {
     where.OR = [
@@ -26,91 +33,46 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  // Filters
   const jobType = params.get('jobType');
   if (jobType) where.jobType = { in: jobType.split(',') };
-
   const workModel = params.get('workModel');
   if (workModel) where.workModel = { in: workModel.split(',') };
-
   const experienceLevel = params.get('experienceLevel');
   if (experienceLevel) where.experienceLevel = { in: experienceLevel.split(',') };
-
   const city = params.get('city');
   if (city) where.city = { contains: city, mode: 'insensitive' };
-
   const state = params.get('state');
   if (state) where.state = { contains: state, mode: 'insensitive' };
-
   const industry = params.get('industry');
   if (industry) where.industry = { contains: industry, mode: 'insensitive' };
-
   const salaryMin = params.get('salaryMin');
   if (salaryMin) where.salaryMax = { gte: parseInt(salaryMin) };
-
   const salaryMax = params.get('salaryMax');
   if (salaryMax) where.salaryMin = { lte: parseInt(salaryMax) };
-
   const isFeatured = params.get('featured');
   if (isFeatured === 'true') where.isFeatured = true;
-
   const isExclusive = params.get('exclusive');
   if (isExclusive === 'true') where.isExclusive = true;
 
-  // Sort
   const sort = params.get('sort') || 'newest';
-  let orderBy: any = {};
+  let orderBy: Record<string, unknown> | Record<string, unknown>[] = {};
   switch (sort) {
-    case 'salary_high':
-      orderBy = { salaryMax: 'desc' };
-      break;
-    case 'salary_low':
-      orderBy = { salaryMin: 'asc' };
-      break;
-    case 'oldest':
-      orderBy = { createdAt: 'asc' };
-      break;
-    default:
-      orderBy = [
-        { isFeatured: 'desc' },
-        { createdAt: 'desc' },
-      ];
+    case 'salary_high': orderBy = { salaryMax: 'desc' }; break;
+    case 'salary_low': orderBy = { salaryMin: 'asc' }; break;
+    case 'oldest': orderBy = { createdAt: 'asc' }; break;
+    default: orderBy = [{ isFeatured: 'desc' }, { createdAt: 'desc' }];
   }
 
   const [jobs, total] = await Promise.all([
     prisma.job.findMany({
       where,
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            logo: true,
-            rating: true,
-            reviewCount: true,
-            industry: true,
-            city: true,
-            state: true,
-          },
-        },
-      },
-      orderBy,
-      skip,
-      take: limit,
+      include: { company: { select: { id: true, name: true, slug: true, logo: true, rating: true, reviewCount: true, industry: true, city: true, state: true } } },
+      orderBy, skip, take: perPage,
     }),
     prisma.job.count({ where }),
   ]);
 
-  return apiSuccess({
-    jobs,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  });
+  return apiResponse({ jobs, pagination: paginationMeta(total, page, perPage) });
 }
 
 export async function POST(req: NextRequest) {
@@ -119,43 +81,35 @@ export async function POST(req: NextRequest) {
 
   const validation = await createJobSchema.safeParseAsync(await req.json());
   if (!validation.success) {
-    return apiError(
-      validation.error.errors.map((e) => e.message).join(', '),
-      400
-    );
+    return apiError('Validation failed', 400, 'VALIDATION_ERROR', validation.error.errors);
   }
 
   const data = validation.data;
-
-  const company = await prisma.company.findFirst({
-    where: { ownerId: user!.id as string },
-  });
-
+  const company = await prisma.company.findFirst({ where: { ownerId: user!.id as string } });
   if (!company && user!.role !== 'ADMIN') {
-    return apiError('You must create a company profile first', 400);
+    return apiError('You must create a company profile first', 400, 'COMPANY_REQUIRED');
   }
 
   const slug = generateSlug(data.title) + '-' + Date.now().toString(36);
 
-  const job = await prisma.job.create({
-    data: {
-      ...data,
-      slug,
-      companyId: company?.id || '',
-      publishedAt: new Date(),
-      expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
-    },
-    include: {
-      company: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          logo: true,
-        },
+  try {
+    const job = await prisma.job.create({
+      data: {
+        ...data,
+        description: sanitizeHtml(data.description),
+        requirements: sanitizeStringArray(data.requirements),
+        responsibilities: sanitizeStringArray(data.responsibilities),
+        benefits: data.benefits ? sanitizeStringArray(data.benefits) : [],
+        slug, companyId: company?.id || '',
+        publishedAt: new Date(),
+        expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
       },
-    },
-  });
-
-  return apiSuccess(job, 201);
+      include: { company: { select: { id: true, name: true, slug: true, logo: true } } },
+    });
+    logger.info({ jobId: job.id, userId: user!.id }, 'Job created');
+    return apiResponse(job, 201);
+  } catch (err) {
+    logger.error({ err, userId: user!.id }, 'Failed to create job');
+    return apiError('Failed to create job', 500, 'INTERNAL_ERROR');
+  }
 }

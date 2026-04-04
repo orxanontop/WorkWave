@@ -1,17 +1,18 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { apiSuccess, apiError, requireAuth, getPagination } from '@/lib/api';
+import { apiResponse, apiError, requireAuth, getPagination, paginationMeta } from '@/lib/api';
 import { messageSchema } from '@/lib/validations';
+import { sanitizeHtml } from '@/lib/sanitize';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   const { error, user } = await requireAuth(req);
   if (error) return error;
 
-  const { page, limit, skip } = getPagination(req.nextUrl.searchParams);
+  const { page, perPage, skip } = getPagination(req.nextUrl.searchParams);
   const conversationWith = req.nextUrl.searchParams.get('with');
 
   if (conversationWith) {
-    // Get messages with specific user
     const messages = await prisma.message.findMany({
       where: {
         OR: [
@@ -20,8 +21,7 @@ export async function GET(req: NextRequest) {
         ],
       },
       orderBy: { createdAt: 'asc' },
-      skip,
-      take: limit,
+      skip, take: perPage,
       include: {
         sender: {
           select: {
@@ -32,7 +32,6 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Mark as read
     await prisma.message.updateMany({
       where: {
         senderId: conversationWith,
@@ -42,13 +41,12 @@ export async function GET(req: NextRequest) {
       data: { isRead: true, readAt: new Date(), status: 'READ' },
     });
 
-    return apiSuccess({ messages });
+    return apiResponse({ messages });
   }
 
-  // Get conversations list
-  const conversations = await prisma.$queryRaw`
+  const conversations = (await prisma.$queryRaw`
     SELECT DISTINCT ON (partner_id) * FROM (
-      SELECT 
+      SELECT
         CASE WHEN "senderId" = ${user!.id} THEN "receiverId" ELSE "senderId" END as partner_id,
         "content" as last_message,
         "createdAt" as last_message_at,
@@ -59,77 +57,63 @@ export async function GET(req: NextRequest) {
       ORDER BY "createdAt" DESC
     ) sub
     ORDER BY partner_id, last_message_at DESC
-  ` as any[];
+  `) as any[];
 
-  // Get partner details
   const partnerIds = conversations.map((c: any) => c.partner_id);
   const partners = await prisma.user.findMany({
     where: { id: { in: partnerIds } },
-    select: {
-      id: true,
-      profile: { select: { firstName: true, lastName: true } },
-      role: true,
-    },
+    select: { id: true, profile: { select: { firstName: true, lastName: true } }, role: true },
   });
 
   const result = conversations.map((conv: any) => ({
     ...conv,
-    partner: partners.find((p) => p.id === conv.partner_id),
+    partner: partners.find((p: any) => p.id === conv.partner_id),
   }));
 
-  return apiSuccess({ conversations: result });
+  return apiResponse({ conversations: result });
 }
 
 export async function POST(req: NextRequest) {
   const { error, user } = await requireAuth(req);
   if (error) return error;
 
-  // Premium check for direct messaging
   if (user!.subscriptionStatus !== 'ACTIVE' && user!.role !== 'EMPLOYER' && user!.role !== 'ADMIN') {
-    return apiError('Premium subscription required for direct messaging', 403);
+    return apiError('Premium subscription required for direct messaging', 403, 'PREMIUM_REQUIRED');
   }
 
   const body = await req.json();
   const validation = messageSchema.safeParse(body);
   if (!validation.success) {
-    return apiError(validation.error.errors.map((e) => e.message).join(', '), 400);
+    return apiError('Validation failed', 400, 'VALIDATION_ERROR', validation.error.errors);
   }
 
   const { receiverId, content } = validation.data;
-
-  if (receiverId === user!.id) {
-    return apiError('Cannot send message to yourself', 400);
-  }
+  if (receiverId === user!.id) return apiError('Cannot send message to yourself', 400, 'VALIDATION_ERROR');
 
   const receiver = await prisma.user.findUnique({ where: { id: receiverId } });
-  if (!receiver) return apiError('Recipient not found', 404);
+  if (!receiver) return apiError('Recipient not found', 404, 'NOT_FOUND');
 
-  const message = await prisma.message.create({
-    data: {
-      senderId: user!.id as string,
-      receiverId,
-      content,
-    },
-    include: {
-      sender: {
-        select: {
-          id: true,
-          profile: { select: { firstName: true, lastName: true } },
-        },
+  try {
+    const message = await prisma.message.create({
+      data: {
+        senderId: user!.id as string,
+        receiverId,
+        content: sanitizeHtml(content),
       },
-    },
-  });
+      include: { sender: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } } },
+    });
 
-  // Create notification
-  await prisma.notification.create({
-    data: {
-      userId: receiverId,
-      title: 'New Message',
-      message: `You received a new message`,
-      type: 'MESSAGE',
-      link: `/messages?with=${user!.id}`,
-    },
-  });
+    await prisma.notification.create({
+      data: {
+        userId: receiverId, title: 'New Message', message: 'You received a new message',
+        type: 'MESSAGE', link: `/messages?with=${user!.id}`,
+      },
+    });
 
-  return apiSuccess(message, 201);
+    logger.info({ messageId: message.id, senderId: user!.id, receiverId }, 'Message sent');
+    return apiResponse(message, 201);
+  } catch (err) {
+    logger.error({ err, senderId: user!.id, receiverId }, 'Failed to send message');
+    return apiError('Failed to send message', 500, 'INTERNAL_ERROR');
+  }
 }

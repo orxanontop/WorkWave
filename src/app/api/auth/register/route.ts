@@ -1,50 +1,42 @@
-import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
+import { NextRequest } from 'next/server';
+import { hash } from '@node-rs/bcrypt';
 import prisma from '@/lib/prisma';
 import { registerSchema } from '@/lib/validations';
-import { validateBody, rateLimit, getClientIp, apiSuccess, apiError } from '@/lib/api';
+import { validateBody, rateLimit, apiResponse, apiError } from '@/lib/api';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
-  const ip = getClientIp(req);
-  if (!rateLimit(ip, 10, 15 * 60 * 1000)) {
-    return apiError('Too many requests. Please try again later.', 429);
-  }
+  const rl = await rateLimit(req, 10, 15 * 60 * 1000);
+  if (!rl.allowed) return rl.response!;
 
   const { data, error } = await validateBody(registerSchema)(req);
   if (error || !data) return error!;
 
-  const existingUser = await prisma.user.findUnique({
-    where: { email: data.email.toLowerCase() },
-  });
-
+  const existingUser = await prisma.user.findUnique({ where: { email: data.email } });
   if (existingUser) {
-    return apiError('An account with this email already exists', 409);
+    return apiError('An account with this email already exists', 409, 'EMAIL_EXISTS');
   }
 
-  const hashedPassword = await bcrypt.hash(data.password, 12);
+  const hashedPassword = await hash(data.password, 10);
 
-  const user = await prisma.user.create({
-    data: {
-      email: data.email.toLowerCase(),
-      password: hashedPassword,
-      role: data.role,
-      profile: {
-        create: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-        },
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email: data.email,
+        password: hashedPassword,
+        role: data.role,
+        profile: { create: { firstName: data.firstName, lastName: data.lastName } },
       },
-    },
-    include: { profile: true },
-  });
+      include: { profile: true },
+    });
 
-  return apiSuccess(
-    {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      name: `${user.profile!.firstName} ${user.profile!.lastName}`,
-    },
-    201
-  );
+    logger.info({ userId: user.id, email: user.email }, 'New user registered');
+    return apiResponse(
+      { id: user.id, email: user.email, role: user.role, name: `${user.profile!.firstName} ${user.profile!.lastName}` },
+      201
+    );
+  } catch (err) {
+    logger.error({ err, email: data.email }, 'Registration failed');
+    return apiError('Registration failed. Please try again.', 500, 'INTERNAL_ERROR');
+  }
 }

@@ -1,49 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { ZodSchema, ZodError } from 'zod';
+import { checkRateLimit } from './rate-limit';
+import { logger } from './logger';
 
-// Rate limiting with in-memory store (use Redis in production)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-export function rateLimit(
-  ip: string,
-  limit: number = 100,
-  windowMs: number = 15 * 60 * 1000
-): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-
-  if (record.count >= limit) {
-    return false;
-  }
-
-  record.count++;
-  return true;
+export interface ApiErrorResponse {
+  success: false;
+  error: string;
+  code?: string;
+  details?: unknown[];
 }
 
-export function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
+export interface ApiSuccessResponse<T> {
+  success: true;
+  data: T;
+  meta?: Record<string, unknown>;
+}
+
+export function apiResponse<T>(data: T, status: number = 200) {
+  return NextResponse.json(
+    { success: true, data },
+    { status, headers: { 'Content-Type': 'application/json' } }
   );
 }
 
-// Auth helpers
+export function apiError(
+  message: string,
+  status: number = 400,
+  code?: string,
+  details?: unknown[]
+) {
+  const body: ApiErrorResponse = { success: false, error: message };
+  if (code) body.code = code;
+  if (details) body.details = details;
+  return NextResponse.json(body, {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function rateLimit(
+  req: NextRequest,
+  limit: number = 100,
+  windowMs: number = 15 * 60 * 1000
+): Promise<{ allowed: boolean; response?: NextResponse }> {
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown';
+  const result = await checkRateLimit(ip, limit, Math.floor(windowMs / 1000));
+  return {
+    allowed: result.allowed,
+    response: result.allowed
+      ? undefined
+      : apiError('Too many requests. Please try again later.', 429, 'RATE_LIMITED'),
+  };
+}
+
 export async function getAuthUser(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  return token;
+  return getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 }
 
 export async function requireAuth(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) {
-    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }), user: null };
+    return { error: apiError('Unauthorized', 401, 'UNAUTHORIZED'), user: null };
   }
   return { error: null, user };
 }
@@ -51,17 +72,15 @@ export async function requireAuth(req: NextRequest) {
 export async function requireRole(req: NextRequest, roles: string[]) {
   const { error, user } = await requireAuth(req);
   if (error) return { error, user: null };
-
-  if (!roles.includes(user!.role as string)) {
+  if (!roles.includes((user as any).role)) {
     return {
-      error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+      error: apiError('You do not have permission to perform this action', 403, 'FORBIDDEN'),
       user: null,
     };
   }
   return { error: null, user };
 }
 
-// Validation helper
 export function validateBody<T>(schema: ZodSchema<T>) {
   return async (req: NextRequest): Promise<{ data: T | null; error: NextResponse | null }> => {
     try {
@@ -70,50 +89,28 @@ export function validateBody<T>(schema: ZodSchema<T>) {
       return { data, error: null };
     } catch (err) {
       if (err instanceof ZodError) {
-        return {
-          data: null,
-          error: NextResponse.json(
-            { error: 'Validation failed', details: err.errors },
-            { status: 400 }
-          ),
-        };
+        return { data: null, error: apiError('Validation failed', 400, 'VALIDATION_ERROR', err.errors) };
       }
-      return {
-        data: null,
-        error: NextResponse.json({ error: 'Invalid request body' }, { status: 400 }),
-      };
+      logger.error({ err }, 'Failed to parse request body');
+      return { data: null, error: apiError('Invalid request body', 400, 'INVALID_BODY') };
     }
   };
 }
 
-// Pagination helper
 export function getPagination(searchParams: URLSearchParams) {
   const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
-  const skip = (page - 1) * limit;
-  return { page, limit, skip };
+  const perPage = Math.min(100, Math.max(1, parseInt(searchParams.get('perPage') || '20')));
+  return { page, perPage, skip: (page - 1) * perPage };
 }
 
-// API response helpers
-export function apiSuccess<T>(data: T, status: number = 200) {
-  return NextResponse.json({ success: true, data }, { status });
+export function paginationMeta(total: number, page: number, perPage: number) {
+  return { page, perPage, total, totalPages: Math.ceil(total / perPage) };
 }
 
-export function apiError(message: string, status: number = 400) {
-  return NextResponse.json({ success: false, error: message }, { status });
-}
-
-// Slug generator
 export function generateSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .substring(0, 100);
+  return text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 100);
 }
 
-// Date helpers
 export function isExpired(date: Date | null | undefined): boolean {
   if (!date) return true;
   return new Date(date) < new Date();

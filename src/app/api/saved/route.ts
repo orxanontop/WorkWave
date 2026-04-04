@@ -1,36 +1,26 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { apiSuccess, apiError, requireAuth, getPagination } from '@/lib/api';
+import { apiResponse, apiError, requireAuth, getPagination, paginationMeta } from '@/lib/api';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   const { error, user } = await requireAuth(req);
   if (error) return error;
 
-  const { page, limit, skip } = getPagination(req.nextUrl.searchParams);
+  const { page, perPage, skip } = getPagination(req.nextUrl.searchParams);
+  const userId = user!.id as string;
 
   const [saved, total] = await Promise.all([
     prisma.savedJob.findMany({
-      where: { userId: user!.id as string },
-      include: {
-        job: {
-          include: {
-            company: {
-              select: { id: true, name: true, logo: true, city: true, state: true },
-            },
-          },
-        },
-      },
+      where: { userId },
+      include: { job: { include: { company: { select: { id: true, name: true, logo: true, city: true, state: true } } } } },
       orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit,
+      skip, take: perPage,
     }),
-    prisma.savedJob.count({ where: { userId: user!.id as string } }),
+    prisma.savedJob.count({ where: { userId } }),
   ]);
 
-  return apiSuccess({
-    savedJobs: saved,
-    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
-  });
+  return apiResponse({ savedJobs: saved, pagination: paginationMeta(total, page, perPage) });
 }
 
 export async function POST(req: NextRequest) {
@@ -40,24 +30,21 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { jobId } = body;
 
-  if (!jobId) return apiError('jobId is required', 400);
+  if (!jobId) return apiError('jobId is required', 400, 'VALIDATION_ERROR');
 
   const job = await prisma.job.findUnique({ where: { id: jobId } });
-  if (!job) return apiError('Job not found', 404);
+  if (!job) return apiError('Job not found', 404, 'NOT_FOUND');
 
-  const existing = await prisma.savedJob.findUnique({
-    where: { userId_jobId: { userId: user!.id as string, jobId } },
-  });
+  const userId = user!.id as string;
+  const existing = await prisma.savedJob.findUnique({ where: { userId_jobId: { userId, jobId } } });
 
   if (existing) {
-    // Unsave
     await prisma.savedJob.delete({ where: { id: existing.id } });
-    return apiSuccess({ saved: false });
+    logger.info({ userId, jobId }, 'Job unsaved');
+    return apiResponse({ saved: false });
   }
 
-  await prisma.savedJob.create({
-    data: { userId: user!.id as string, jobId },
-  });
-
-  return apiSuccess({ saved: true }, 201);
+  await prisma.savedJob.create({ data: { userId, jobId } });
+  logger.info({ userId, jobId }, 'Job saved');
+  return apiResponse({ saved: true }, 201);
 }
