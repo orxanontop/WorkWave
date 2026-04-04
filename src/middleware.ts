@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { generateRequestId, REQUEST_ID_HEADER, logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
 // Locale detection from Accept-Language header
@@ -18,8 +17,8 @@ function detectLocale(req: NextRequest): typeof SUPPORTED_LOCALES[number] {
     .filter(Boolean);
 
   for (const lang of langs) {
-    if (SUPPORTED_LOCALES.includes(lang as any)) {
-      return lang as any;
+    if (SUPPORTED_LOCALES.includes(lang as (typeof SUPPORTED_LOCALES)[number])) {
+      return lang as (typeof SUPPORTED_LOCALES)[number];
     }
   }
   return DEFAULT_LOCALE;
@@ -46,14 +45,6 @@ function isAllowedOrigin(origin: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Rate Limit headers (read from Redis in API routes, just passthrough headers here for client visibility)
-// ---------------------------------------------------------------------------
-function setRateLimitHeaders(res: NextResponse, remaining: number, resetAt: number) {
-  res.headers.set('X-RateLimit-Remaining', String(remaining));
-  res.headers.set('X-RateLimit-Reset', String(resetAt));
-}
-
-// ---------------------------------------------------------------------------
 // Route Protection
 // ---------------------------------------------------------------------------
 const PROTECTED_ROUTES = [
@@ -77,11 +68,10 @@ async function checkAuth(req: NextRequest): Promise<NextResponse | null> {
 
     // Admin routes require ADMIN role
     if (route.prefix === '/admin' && (token as any).role !== 'ADMIN') {
-      const res = NextResponse.json(
+      return NextResponse.json(
         { error: 'Forbidden: admin access required', code: 'FORBIDDEN' },
         { status: 403 }
       );
-      return res;
     }
   }
 
@@ -96,24 +86,15 @@ export async function middleware(req: NextRequest) {
   const origin = req.headers.get('origin') || '';
   const locale = detectLocale(req);
 
-  // Generate or propagate request ID
-  let reqId = req.headers.get(REQUEST_ID_HEADER) || generateRequestId();
-
-  // Log incoming request
-  const isApiRoute = url.pathname.startsWith('/api/');
-  if (isApiRoute) {
-    logger.info(
-      { reqId, method: req.method, path: url.pathname, locale },
-      'Incoming request'
-    );
-  }
+  // Generate a simple request ID (Edge Runtime compatible — no Node.js crypto)
+  const reqId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
   // Handle preflight CORS
   if (req.method === 'OPTIONS') {
     if (isAllowedOrigin(origin)) {
       const res = new NextResponse(null, { status: 204 });
       setCorsHeaders(res, origin);
-      res.headers.set(REQUEST_ID_HEADER, reqId);
+      res.headers.set('X-Request-Id', reqId);
       return res;
     }
     return new NextResponse(null, { status: 403 });
@@ -122,7 +103,9 @@ export async function middleware(req: NextRequest) {
   // Check route protection (auth required)
   const authResult = await checkAuth(req);
   if (authResult) {
-    authResult.headers.set(REQUEST_ID_HEADER, reqId);
+    if (authResult.headers.get('X-Request-Id') === null) {
+      authResult.headers.set('X-Request-Id', reqId);
+    }
     return authResult;
   }
 
@@ -130,7 +113,7 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   // Attach request ID for downstream handlers
-  res.headers.set(REQUEST_ID_HEADER, reqId);
+  res.headers.set('X-Request-Id', reqId);
 
   // Attach locale header
   res.headers.set('X-Locale', locale);
@@ -140,8 +123,7 @@ export async function middleware(req: NextRequest) {
     setCorsHeaders(res, origin);
   }
 
-  // Content-Security-Policy (via headers function in route handlers for API,
-  // but we set it here for pages too)
+  // Security headers
   res.headers.set('X-Frame-Options', 'DENY');
   res.headers.set('X-Content-Type-Options', 'nosniff');
   res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -154,11 +136,10 @@ export async function middleware(req: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// Matcher config — avoid _next static files, images, and favicon
+// Matcher config — avoid _next static files, images, files with extensions, and auth session
 // ---------------------------------------------------------------------------
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth/session).*)',
-    '/api/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 };
