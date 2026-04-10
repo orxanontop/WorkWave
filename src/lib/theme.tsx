@@ -35,9 +35,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
-  // Prevent flash of wrong theme
+  // Prevent flash of wrong theme logic while ensuring context is still provided
   if (!mounted) {
-    return <>{children}</>;
+    return (
+      <ThemeContext.Provider value={{ theme: 'dark', toggleTheme: () => {} }}>
+        {/* Render children hidden initially to prevent flash of wrong theme, or just render them since dark theme is default now */}
+        {children}
+      </ThemeContext.Provider>
+    );
   }
 
   return (
