@@ -37,3 +37,7 @@ prisma/migrations/
 # Docker
 postgres_data/
 redis_data/
+
+# Claude Code (personal AI assistant config)
+.claude/
+AGENTS.md

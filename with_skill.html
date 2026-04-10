@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>WorkWave - Find Your Next Opportunity</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--bg2:#12121a;--glass:rgba(255,255,255,0.05);--glass2:rgba(255,255,255,0.08);--glass3:rgba(255,255,255,0.12);--cyan:#22d3ee;--purple:#8b5cf6;--violet:#7c3aed;--magenta:#e879f9;--pink:#ec4899;--neon-bg:linear-gradient(135deg,#22d3ee,#8b5cf6,#7c3aed);--neon-bg2:linear-gradient(135deg,#06b6d4,#7c3aed);--neon-glow:0 0 20px rgba(34,211,238,0.3);--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;cursor:default}
+a{text-decoration:none;color:inherit}
+/* Navbar */
+nav{position:fixed;top:0;width:100%;z-index:100;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;background:rgba(10,10,15,0.8);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05)}
+.logo{font-size:1.5rem;font-weight:800;background:var(--neon-bg);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.02em}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{color:var(--text2);font-size:0.9rem;font-weight:500;transition:color 0.3s}
+.nav-links a:hover{color:var(--cyan)}
+.nav-links .login{padding:0.5rem 1.25rem;border:1px solid rgba(255,255,255,0.15);border-radius:8px;background:var(--glass);transition:all 0.3s}
+.nav-links .login:hover{border-color:var(--cyan);background:rgba(34,211,238,0.1);box-shadow:var(--neon-glow)}
+.nav-links .signup{padding:0.5rem 1.25rem;border-radius:8px;background:var(--neon-bg);font-weight:600;color:#fff;transition:all 0.3s}
+.nav-links .signup:hover{filter:brightness(1.2);box-shadow:var(--neon-glow)}
+</style>
+</head><body>
+<nav>
+  <div class="logo">WorkWave</div>
+  <div class="nav-links">
+    <a href="#">Jobs</a><a href="#">Companies</a><a href="#">Pricing</a>
+    <a href="#" class="login">Login</a><a href="#" class="signup">Sign Up</a>
+  </div>
+</nav>
+<!-- Hero -->
+<section id="hero" style="position:relative;width:100%;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden">
+  <canvas id="hero-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:0"></canvas>
+  <div id="scanline" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none"></div>
+  <div style="position:relative;z-index:2;text-align:center;max-width:800px;padding:2rem">
+    <h1 style="font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;line-height:1.1;margin-bottom:1rem;letter-spacing:-0.03em">
+      <span style="background:linear-gradient(135deg,#22d3ee 0%,#8b5cf6 50%,#e879f9 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 3s ease-in-out infinite">Find Your Next Opportunity</span>
+    </h1>
+    <p style="font-size:1.15rem;color:var(--text2);margin-bottom:2rem;max-width:600px;margin-inline:auto;line-height:1.7">Connect with 2,500+ companies and 50,000+ professionals on the most advanced job platform of 2026</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;max-width:600px;margin:0 auto 1.5rem">
+      <div style="flex:1;min-width:280px;padding:0.75rem 1.25rem;background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:var(--text2);font-size:0.95rem;outline:none;transition:all 0.3s;cursor:text">
+        <span style="pointer-events:none">Search jobs, companies, skills...</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="#" style="padding:0.85rem 2rem;background:linear-gradient(135deg,#22d3ee,#7c3aed);border-radius:10px;font-weight:600;font-size:0.95rem;color:#fff;transition:all 0.3s;box-shadow:0 0 30px rgba(34,211,238,0.2)">Browse Jobs</a>
+      <a href="#" style="padding:0.85rem 2rem;border:1px solid rgba(255,255,255,0.2);border-radius:10px;font-weight:600;font-size:0.95rem;color:var(--text);background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);transition:all 0.3s">Post a Job</a>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(to top,var(--bg),transparent);z-index:1"></div>
+</section>
+
+<style>@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}</style>
+<!-- Stats -->
+<section id="stats" style="padding:6rem 2rem;display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;max-width:1200px;margin:0 auto">
+  <div class="glass-card stat-card" style="padding:2rem;background:var(--glass2);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-align:center;min-width:220px;flex:1;max-width:280px;opacity:0;transform:translateY(30px);transition:all 0.6s ease">
+    <div style="font-size:2.5rem;font-weight:900;background:var(--neon-bg);-webkit-background-clip:text;-webkit-text-fill-color:transparent" data-count="10000">0</div>
+    <div style="color:var(--text2);margin-top:0.5rem;font-size:0.9rem">Active Jobs</div>
+  </div>
+  <div class="glass-card stat-card" style="padding:2rem;background:var(--glass2);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-align:center;min-width:220px;flex:1;max-width:280px;opacity:0;transform:translateY(30px);transition:all 0.6s ease">
+    <div style="font-size:2.5rem;font-weight:900;background:var(--neon-bg);-webkit-background-clip:text;-webkit-text-fill-color:transparent" data-count="2500">0</div>
+    <div style="color:var(--text2);margin-top:0.5rem;font-size:0.9rem">Verified Companies</div>
+  </div>
+  <div class="glass-card stat-card" style="padding:2rem;background:var(--glass2);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-align:center;min-width:220px;flex:1;max-width:280px;opacity:0;transform:translateY(30px);transition:all 0.6s ease">
+    <div style="font-size:2.5rem;font-weight:900;background:var(--neon-bg);-webkit-background-clip:text;-webkit-text-fill-color:transparent" data-count="50000">0</div>
+    <div style="color:var(--text2);margin-top:0.5rem;font-size:0.9rem">Professionals</div>
+  </div>
+  <div class="glass-card stat-card" style="padding:2rem;background:var(--glass2);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-align:center;min-width:220px;flex:1;max-width:280px;opacity:0;transform:translateY(30px);transition:all 0.6s ease">
+    <div style="font-size:2.5rem;font-weight:900;background:var(--neon-bg);-webkit-background-clip:text;-webkit-text-fill-color:transparent">98%</div>
+    <div style="color:var(--text2);margin-top:0.5rem;font-size:0.9rem">Satisfaction Rate</div>
+  </div>
+</section>

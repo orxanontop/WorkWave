@@ -1,5 +1,10 @@
+import { loadEnvConfig } from '@next/env';
 import { PrismaClient } from '@prisma/client';
 import { logger } from './logger';
+
+if (!process.env.DATABASE_URL) {
+  loadEnvConfig(process.cwd());
+}
 
 // ---------------------------------------------------------------------------
 // Prisma Middleware — logs all queries and catches + reports errors through pino
@@ -40,7 +45,16 @@ function createExtendedClient(base: PrismaClient) {
 // Base client only — needed by PrismaAdapter
 const base =
   globalForPrisma.prisma ??
-  new PrismaClient({ log: [] });
+  new PrismaClient({
+    log: [],
+    ...(process.env.DATABASE_URL
+      ? {
+          datasources: {
+            db: { url: process.env.DATABASE_URL },
+          },
+        }
+      : {}),
+  });
 
 // Extended client with query logging middleware
 export const prisma =
