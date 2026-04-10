@@ -1,359 +1,550 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { APP_NAME } from '@/lib/constants';
+import Script from 'next/script';
 import { useI18n } from '@/lib/i18n';
 
-function useInView(threshold = 0.1) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setIsVisible(true); },
-      { threshold }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [threshold]);
-
-  return { ref, isVisible };
+// Three.js is loaded via CDN script tag — declare the global
+declare global {
+  interface Window {
+    THREE?: any; // eslint-disable-line
+  }
 }
 
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const STATS = [
+  { target: 2400000, label: 'Active Jobs Listed' },
+  { target: 850000, label: 'Companies Hiring' },
+  { target: 98, label: 'Match Accuracy' },
+  { target: 12, label: 'Days Avg. to Hire' },
+];
+
+const JOBS = [
+  { company: 'NeuralTech Labs', title: 'Senior AI Engineer', tags: ['Remote', 'ML', 'Python'], salary: '$185k - $240k' },
+  { company: 'QuantumFlow Inc', title: 'Full-Stack Architect', tags: ['Hybrid', 'React', 'Rust'], salary: '$160k - $210k' },
+  { company: 'CyberNova Systems', title: 'Security Operations Lead', tags: ['On-site', 'SOC', 'Zero Trust'], salary: '$170k - $220k' },
+  { company: 'DataPulse Analytics', title: 'VP of Engineering', tags: ['Remote', 'Leadership', 'Scale'], salary: '$220k - $300k' },
+];
+
+const MARQUEE_COMPANIES = [
+  'NeuralTech Labs', 'QuantumFlow', 'CyberNova', 'DataPulse',
+  'Synthwave AI', 'NovaByte', 'ArcTech', 'Vertex Dynamics',
+  'Phantom Digital', 'Zenith Systems',
+];
+
+const STEPS = [
+  { num: '01', icon: '🚀', title: 'Build Your Profile', desc: 'Import your resume, showcase your skills, and set your preferences. Our AI parses everything in seconds.' },
+  { num: '02', icon: '🤖', title: 'AI Smart Matching', desc: 'Our engine analyzes 200+ signals to surface roles that truly fit your skills, goals, and lifestyle.' },
+  { num: '03', icon: '✨', title: 'Apply & Interview', desc: 'One-click apply, AI interview prep, and real-time tracking. Land offers faster than ever.' },
+];
+
+const TESTIMONIALS = [
+  { text: '"WorkWave matched me with a role at a top AI lab in just 8 days. The salary transparency alone saved me from lowball offers."', initials: 'AK', name: 'Alex Kim', role: 'ML Engineer at NeuralTech' },
+  { text: '"The AI matching is unreal. Every recommended role felt handpicked. I got 3 offers within two weeks."', initials: 'SR', name: 'Sarah Reyes', role: 'Staff Engineer at QuantumFlow' },
+  { text: '"As a hiring manager, WorkWave cut our time-to-hire by 60%. The candidate quality is consistently excellent."', initials: 'MJ', name: 'Marcus Johnson', role: 'VP Engineering at DataPulse' },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatStatValue(current: number, target: number): string {
+  if (target === 98) return `${Math.round(current)}%`;
+  if (target === 12) return `${Math.round(current)}`;
+  if (target >= 1000000) {
+    const val = current / 1000000;
+    return current >= target
+      ? `${(target / 1000000).toFixed(1).replace(/\.0$/, '')}M`
+      : `${val.toFixed(1)}M`;
+  }
+  if (target >= 1000) return `${Math.round(current / 1000)}K`;
+  return `${Math.round(current)}`;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function HomePage() {
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const threeInitialized = useRef(false);
   const { t } = useI18n();
 
-  const heroRef = useInView(0.1);
-  const statsRef = useInView(0.2);
-  const featuresRef = useInView(0.1);
-  const pricingRef = useInView(0.1);
-  const ctaRef = useInView(0.1);
+  const initThreeJS = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || threeInitialized.current) return;
+    const THREE = window.THREE;
+    if (!THREE) return;
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('search', searchQuery);
-    if (location) params.set('city', location);
-    router.push(`/jobs?${params.toString()}`);
-  };
+    threeInitialized.current = true;
 
-  const STATS = [
-    { label: t('stats.activeJobs'), value: '10,000+', icon: '💼' },
-    { label: t('stats.companies'), value: '2,500+', icon: '🏢' },
-    { label: t('stats.hiredThisMonth'), value: '850+', icon: '🎯' },
-    { label: t('stats.cities'), value: '50+', icon: '📍' },
-  ];
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.z = 50;
 
-  const FEATURES = [
-    {
-      icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      ),
-      title: t('features.localSearch.title'),
-      description: t('features.localSearch.description'),
-      color: 'from-sky-500 to-cyan-500',
-      bg: 'bg-sky-50 dark:bg-sky-500/10',
-      text: 'text-sky-600 dark:text-sky-400',
-    },
-    {
-      icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      ),
-      title: t('features.oneClick.title'),
-      description: t('features.oneClick.description'),
-      color: 'from-amber-500 to-orange-500',
-      bg: 'bg-amber-50 dark:bg-amber-500/10',
-      text: 'text-amber-600 dark:text-amber-400',
-    },
-    {
-      icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-      ),
-      title: t('features.verified.title'),
-      description: t('features.verified.description'),
-      color: 'from-emerald-500 to-green-500',
-      bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-      text: 'text-emerald-600 dark:text-emerald-400',
-    },
-    {
-      icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-        </svg>
-      ),
-      title: t('features.tracking.title'),
-      description: t('features.tracking.description'),
-      color: 'from-violet-500 to-purple-500',
-      bg: 'bg-violet-50 dark:bg-violet-500/10',
-      text: 'text-violet-600 dark:text-violet-400',
-    },
-    {
-      icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      ),
-      title: t('features.messaging.title'),
-      description: t('features.messaging.description'),
-      color: 'from-pink-500 to-rose-500',
-      bg: 'bg-pink-50 dark:bg-pink-500/10',
-      text: 'text-pink-600 dark:text-pink-400',
-    },
-    {
-      icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
-      ),
-      title: t('features.aiTips.title'),
-      description: t('features.aiTips.description'),
-      color: 'from-indigo-500 to-blue-500',
-      bg: 'bg-indigo-50 dark:bg-indigo-500/10',
-      text: 'text-indigo-600 dark:text-indigo-400',
-    },
-  ];
+    const PARTICLE_COUNT = 600;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const velocities: { x: number; y: number }[] = [];
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 100;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+      velocities.push({ x: (Math.random() - 0.5) * 0.02, y: (Math.random() - 0.5) * 0.02 });
+    }
+
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.3, color: 0x22d3ee, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending });
+    scene.add(new THREE.Points(geo, mat));
+
+    const CONN_LIMIT = 100;
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending });
+    const lineGeo = new THREE.BufferGeometry();
+    const linePositions = new Float32Array(CONN_LIMIT * CONN_LIMIT * 3);
+    lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+    scene.add(new THREE.LineSegments(lineGeo, lineMat));
+
+    const mouse = { x: 0, y: 0 };
+    const onMouseMove = (e: MouseEvent) => {
+      mouse.x = (e.clientX / window.innerWidth - 0.5) * 100;
+      mouse.y = -(e.clientY / window.innerHeight - 0.5) * 100;
+    };
+    document.addEventListener('mousemove', onMouseMove);
+
+    let animId: number;
+    function animate() {
+      animId = requestAnimationFrame(animate);
+      const p = geo.attributes.position.array as Float32Array;
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        p[i * 3] += velocities[i].x;
+        p[i * 3 + 1] += velocities[i].y;
+        const dx = p[i * 3] - mouse.x;
+        const dy = p[i * 3 + 1] - mouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 15) {
+          const f = 0.02 * (1 - dist / 15);
+          velocities[i].x += dx * f * 0.01;
+          velocities[i].y += dy * f * 0.01;
+        }
+        if (Math.abs(p[i * 3]) > 50) velocities[i].x *= -1;
+        if (Math.abs(p[i * 3 + 1]) > 50) velocities[i].y *= -1;
+      }
+      geo.attributes.position.needsUpdate = true;
+
+      const lp = lineGeo.attributes.position.array as Float32Array;
+      let li = 0;
+      const subset = Math.min(PARTICLE_COUNT, CONN_LIMIT);
+      for (let i = 0; i < subset; i++) {
+        for (let j = i + 1; j < subset; j++) {
+          const dx = p[i * 3] - p[j * 3];
+          const dy = p[i * 3 + 1] - p[j * 3 + 1];
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 18) {
+            lp[li * 6] = p[i * 3];
+            lp[li * 6 + 1] = p[i * 3 + 1];
+            lp[li * 6 + 2] = 0;
+            lp[li * 6 + 3] = p[j * 3];
+            lp[li * 6 + 4] = p[j * 3 + 1];
+            lp[li * 6 + 5] = 0;
+            li++;
+          }
+        }
+      }
+      for (let k = li; k < linePositions.length / 6; k++) {
+        lp[k * 6] = lp[k * 6 + 1] = lp[k * 6 + 2] = lp[k * 6 + 3] = lp[k * 6 + 4] = lp[k * 6 + 5] = 0;
+      }
+      lineGeo.attributes.position.needsUpdate = true;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    const onResize = () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    };
+    window.addEventListener('resize', onResize);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      document.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('resize', onResize);
+      renderer.dispose();
+    };
+  }, []);
+
+  // Initialize Three.js on mount (if script already loaded) or on script load
+  useEffect(() => {
+    if (window.THREE) {
+      initThreeJS();
+    }
+  }, [initThreeJS]);
+
+  // Scroll reveal & counter animations
+  useEffect(() => {
+    // Fade-up observer
+    const fadeEls = document.querySelectorAll('.ww-fade-up');
+    const fadeObs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e, i) => {
+          if (e.isIntersecting) {
+            setTimeout(() => e.target.classList.add('ww-visible'), i * 80);
+            fadeObs.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+    fadeEls.forEach((el) => fadeObs.observe(el));
+
+    // Animated counters
+    const counterEls = document.querySelectorAll<HTMLElement>('.ww-stat-number');
+    const counterObs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target as HTMLElement;
+          const target = parseInt(el.dataset.target || '0', 10);
+          let current = 0;
+          const totalSteps = 50;
+          const stepTime = 1500 / totalSteps;
+          const increment = target / totalSteps;
+
+          function tick() {
+            current += increment;
+            if (current >= target) current = target;
+            el.textContent = formatStatValue(current, target);
+            if (current < target) setTimeout(tick, stepTime);
+          }
+          tick();
+          counterObs.unobserve(el);
+        });
+      },
+      { threshold: 0.5 }
+    );
+    counterEls.forEach((el) => counterObs.observe(el));
+
+    // 3D tilt on job cards
+    const tiltCards = document.querySelectorAll<HTMLElement>('.ww-tilt');
+    const onMove = (card: HTMLElement, e: MouseEvent) => {
+      const r = card.getBoundingClientRect();
+      const cx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+      const cy = ((e.clientY - r.top) / r.height - 0.5) * 2;
+      card.style.transform = `perspective(800px) rotateY(${cx * 8}deg) rotateX(${-cy * 8}deg) scale3d(1.02,1.02,1.02)`;
+      card.style.transition = 'none';
+    };
+    const onLeave = (card: HTMLElement) => {
+      card.style.transform = '';
+      card.style.transition = 'transform 0.5s ease';
+    };
+    const handlers = Array.from(tiltCards).map((card) => {
+      const move = (e: MouseEvent) => onMove(card, e);
+      const leave = () => onLeave(card);
+      card.addEventListener('mousemove', move);
+      card.addEventListener('mouseleave', leave);
+      return { card, move, leave };
+    });
+
+    return () => {
+      fadeObs.disconnect();
+      counterObs.disconnect();
+      handlers.forEach(({ card, move, leave }) => {
+        card.removeEventListener('mousemove', move);
+        card.removeEventListener('mouseleave', leave);
+      });
+    };
+  }, []);
+
+  // Build marquee items (duplicated for seamless loop)
+  const marqueeItems = [...MARQUEE_COMPANIES, ...MARQUEE_COMPANIES].flatMap((name, i) => [
+    <span key={`name-${i}`} className="ww-marquee-item">{name}</span>,
+    <span key={`dot-${i}`} className="ww-marquee-item">•</span>,
+  ]);
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section ref={heroRef.ref} className="relative overflow-hidden text-white" style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 30%, #8b5cf6 60%, #d946ef 100%)' }}>
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-sky-400/20 rounded-full blur-3xl animate-float" />
-          <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-violet-400/20 rounded-full blur-3xl animate-float animate-delay-500" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse-slow" />
-          <div className="absolute top-20 left-1/4 w-32 h-32 bg-cyan-300/10 rounded-full blur-2xl animate-float animate-delay-300" />
-          <div className="absolute bottom-10 right-1/4 w-40 h-40 bg-fuchsia-300/10 rounded-full blur-2xl animate-float animate-delay-700" />
-        </div>
+    <>
+      <Script
+        src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        strategy="afterInteractive"
+        onLoad={initThreeJS}
+      />
 
-        <div className="container-app relative py-20 sm:py-28 lg:py-36">
-          <div className={`max-w-3xl mx-auto text-center ${heroRef.isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 backdrop-blur-md text-sm font-medium mb-8 border border-white/20">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-lg shadow-emerald-400/50" />
-              {t('hero.badge')}
+      <style jsx global>{`
+        /* ── WorkWave Landing Scoped Styles ──────────────────────────── */
+        .ww-landing { background: #0a0a0f; color: #e2e8f0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Hero */
+        .ww-hero { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+        .ww-hero-canvas { position: absolute; inset: 0; z-index: 0; }
+        .ww-hero-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 0%, #0a0a0f 75%); z-index: 1; }
+        .ww-hero-content { position: relative; z-index: 2; max-width: 820px; padding: 0 20px; }
+        .ww-hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px 6px 8px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); font-size: 0.8rem; color: #94a3b8; margin-bottom: 32px; backdrop-filter: blur(8px); }
+        .ww-hero-badge .ww-dot { width: 6px; height: 6px; border-radius: 50%; background: #14b8a6; box-shadow: 0 0 8px #14b8a6; }
+        .ww-hero h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 1.05; margin-bottom: 24px; letter-spacing: -1.5px; color: #e2e8f0; }
+        .ww-hero h1 .ww-gradient { background: linear-gradient(135deg, #fff 0%, #94a3b8 50%, #22d3ee 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .ww-hero p { font-size: 1.15rem; color: #94a3b8; max-width: 550px; margin: 0 auto 48px; line-height: 1.7; }
+        .ww-hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .ww-hero-glow { position: absolute; width: 500px; height: 500px; border-radius: 50%; filter: blur(120px); opacity: 0.15; z-index: 0; pointer-events: none; }
+        .ww-glow-cyan { background: #22d3ee; top: -100px; left: -100px; }
+        .ww-glow-purple { background: #8b5cf6; bottom: -100px; right: -100px; }
+
+        /* Buttons */
+        .ww-btn { padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; border: none; cursor: pointer; transition: all 0.3s; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; }
+        .ww-btn-primary { background: linear-gradient(135deg, #22d3ee, #8b5cf6); color: #fff; box-shadow: 0 0 20px rgba(34,211,238,0.3); }
+        .ww-btn-primary:hover { box-shadow: 0 0 35px rgba(34,211,238,0.5); transform: translateY(-2px); }
+        .ww-btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.08); color: #e2e8f0; }
+        .ww-btn-ghost:hover { border-color: #94a3b8; background: rgba(255,255,255,0.03); }
+
+        /* Sections */
+        .ww-section { padding: 100px 40px; max-width: 1200px; margin: 0 auto; }
+        .ww-section-label { display: inline-block; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: #22d3ee; margin-bottom: 12px; }
+        .ww-section-title { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; margin-bottom: 16px; color: #e2e8f0; }
+        .ww-section-sub { color: #94a3b8; max-width: 550px; margin-bottom: 60px; line-height: 1.7; }
+
+        /* Stats */
+        .ww-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
+        .ww-stat-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 32px; text-align: center; transition: transform 0.3s, border-color 0.3s; }
+        .ww-stat-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-4px); }
+        .ww-stat-number { font-size: 2.8rem; font-weight: 900; background: linear-gradient(135deg, #22d3ee, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .ww-stat-label { color: #94a3b8; font-size: 0.95rem; margin-top: 4px; }
+
+        /* Jobs */
+        .ww-jobs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+        .ww-job-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px; transition: border-color 0.4s; cursor: pointer; position: relative; overflow: hidden; }
+        .ww-job-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(34,211,238,0.06), transparent 40%, rgba(139,92,246,0.06)); opacity: 0; transition: opacity 0.4s; border-radius: 16px; pointer-events: none; }
+        .ww-job-card:hover::before { opacity: 1; }
+        .ww-job-card:hover { border-color: rgba(34,211,238,0.3); }
+        .ww-job-company { font-size: 0.85rem; color: #22d3ee; font-weight: 600; margin-bottom: 8px; }
+        .ww-job-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; color: #e2e8f0; }
+        .ww-job-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .ww-job-tag { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; background: rgba(139,92,246,0.15); color: #8b5cf6; font-weight: 500; }
+        .ww-job-salary { font-size: 1rem; font-weight: 700; color: #fff; }
+
+        /* Marquee */
+        .ww-marquee-section { padding: 60px 0; overflow: hidden; border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .ww-marquee-track { display: flex; gap: 60px; animation: wwMarquee 25s linear infinite; width: max-content; }
+        .ww-marquee-item { font-size: 1.4rem; font-weight: 700; color: rgba(255,255,255,0.12); white-space: nowrap; letter-spacing: -0.5px; transition: color 0.3s; }
+        .ww-marquee-item:hover { color: rgba(255,255,255,0.3); }
+        @keyframes wwMarquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* Steps */
+        .ww-steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; }
+        .ww-step-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 36px; position: relative; transition: border-color 0.3s; }
+        .ww-step-card:hover { border-color: rgba(34,211,238,0.2); }
+        .ww-step-num { font-size: 3rem; font-weight: 900; background: linear-gradient(135deg, #22d3ee, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.35; position: absolute; top: 16px; right: 24px; }
+        .ww-step-icon { font-size: 2.2rem; margin-bottom: 20px; display: block; }
+        .ww-step-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; color: #e2e8f0; }
+        .ww-step-card p { color: #94a3b8; line-height: 1.6; font-size: 0.95rem; }
+
+        /* Testimonials */
+        .ww-testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+        .ww-test-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 32px; transition: border-color 0.3s; }
+        .ww-test-card:hover { border-color: rgba(139,92,246,0.3); }
+        .ww-test-text { font-size: 1rem; line-height: 1.7; color: #e2e8f0; margin-bottom: 24px; font-style: italic; }
+        .ww-test-author { display: flex; align-items: center; gap: 12px; }
+        .ww-test-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #22d3ee, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem; flex-shrink: 0; }
+        .ww-test-name { font-weight: 600; font-size: 0.95rem; color: #e2e8f0; }
+        .ww-test-role { font-size: 0.8rem; color: #94a3b8; }
+
+        /* CTA */
+        .ww-cta { text-align: center; padding: 120px 40px; position: relative; overflow: hidden; }
+        .ww-cta::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(34,211,238,0.06) 0%, transparent 60%); pointer-events: none; }
+        .ww-cta h2 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; margin-bottom: 16px; position: relative; color: #e2e8f0; }
+        .ww-cta p { color: #94a3b8; margin-bottom: 36px; font-size: 1.1rem; position: relative; }
+
+        /* Animations */
+        .ww-fade-up { opacity: 0; transform: translateY(40px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .ww-fade-up.ww-visible { opacity: 1; transform: translateY(0); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .ww-section { padding: 60px 20px; }
+          .ww-hero-buttons { flex-direction: column; align-items: center; }
+          .ww-cta { padding: 80px 20px; }
+          .ww-pricing-grid { grid-template-columns: 1fr; }
+          .ww-pricing-section { padding: 80px 20px; }
+        }
+
+        /* Pricing */
+        .ww-pricing-section { padding: 100px 40px; max-width: 1000px; margin: 0 auto; text-align: center; position: relative; }
+        .ww-pricing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; max-width: 900px; margin: 0 auto; }
+        .ww-pricing-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 40px 32px; text-align: left; position: relative; transition: border-color 0.3s, transform 0.3s; }
+        .ww-pricing-card:hover { border-color: rgba(34,211,238,0.2); transform: translateY(-4px); }
+        .ww-pricing-card.ww-featured { border-color: rgba(139,92,246,0.3); }
+        .ww-pricing-card.ww-featured::before { content: ''; position: absolute; top: -1px; left: 50%; transform: translateX(-50%); width: 200px; height: 2px; background: linear-gradient(90deg, transparent, #8b5cf6, #22d3ee, transparent); }
+        .ww-pricing-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); padding: 4px 16px; border-radius: 100px; background: linear-gradient(135deg, #8b5cf6, #22d3ee); color: #fff; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+        .ww-pricing-name { font-size: 1.25rem; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
+        .ww-pricing-price { font-size: 3rem; font-weight: 900; margin-bottom: 8px; background: linear-gradient(135deg, #22d3ee, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.1; }
+        .ww-pricing-period { font-size: 0.85rem; color: #94a3b8; }
+        .ww-pricing-features { list-style: none; padding: 0; margin: 28px 0 32px; }
+        .ww-pricing-features li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: 0.9rem; color: #94a3b8; line-height: 1.5; }
+        .ww-pricing-features li .ww-check { width: 18px; height: 18px; border-radius: 50%; background: rgba(34,211,238,0.15); color: #22d3ee; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.65rem; margin-top: 2px; }
+        .ww-pricing-btn { display: block; width: 100%; padding: 14px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; border: none; cursor: pointer; transition: all 0.3s; font-family: 'Inter', sans-serif; text-align: center; text-decoration: none; }
+        .ww-pricing-btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; }
+        .ww-pricing-btn-outline:hover { border-color: #22d3ee; background: rgba(34,211,238,0.05); }
+        .ww-pricing-btn-primary { background: linear-gradient(135deg, #22d3ee, #8b5cf6); color: #fff; box-shadow: 0 0 20px rgba(34,211,238,0.2); }
+        .ww-pricing-btn-primary:hover { box-shadow: 0 0 35px rgba(34,211,238,0.4); transform: translateY(-2px); }
+      `}</style>
+
+      <div className="ww-landing">
+        {/* Hero */}
+        <section className="ww-hero">
+          <canvas ref={canvasRef} className="ww-hero-canvas" />
+          <div className="ww-hero-overlay" />
+          <div className="ww-hero-glow ww-glow-cyan" />
+          <div className="ww-hero-glow ww-glow-purple" />
+          <div className="ww-hero-content">
+            <div className="ww-hero-badge">
+              <span className="ww-dot" />
+              Now live — Phase 2 rolling out
             </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-6 text-balance leading-tight">
-              {t('hero.title')}{' '}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-300 via-cyan-200 to-emerald-300 animate-shimmer bg-[length:200%_100%]">
-                {t('hero.titleAccent')}
-              </span>
+            <h1>
+              <span className="ww-gradient">Find your next</span>
+              <br />
+              career wave
             </h1>
-
-            <p className="text-lg sm:text-xl text-sky-100/90 mb-10 max-w-2xl mx-auto text-balance leading-relaxed">
-              {t('hero.subtitle')}
-            </p>
-
-            {/* Search Form */}
-            <form onSubmit={handleSearch} className="bg-white/95 backdrop-blur-lg rounded-2xl p-2 sm:p-3 shadow-2xl max-w-2xl mx-auto hover:shadow-3xl transition-shadow duration-500 border border-white/30">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 relative group">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-sky-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder={String(t('hero.searchPlaceholder'))}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3.5 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all"
-                  />
-                </div>
-                <div className="flex-1 relative group">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-sky-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder={String(t('hero.locationPlaceholder'))}
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3.5 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all"
-                  />
-                </div>
-                <button type="submit" className="btn btn-lg px-8 sm:rounded-xl shadow-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white hover:shadow-2xl hover:shadow-sky-500/40 hover:scale-105 transition-all duration-300">
-                  {String(t('hero.search'))}
-                </button>
-              </div>
-            </form>
-
-            {/* Quick links */}
-            <div className={`mt-8 flex flex-wrap justify-center gap-2 ${heroRef.isVisible ? 'animate-fade-in-up animate-delay-300' : 'opacity-0'}`}>
-              {[t('hero.remote'), t('hero.engineering'), t('hero.marketing'), t('hero.design'), t('hero.sales')].map((tag, i) => (
-                <Link
-                  key={String(tag)}
-                  href={`/jobs?search=${tag}`}
-                  className="px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 hover:bg-white/25 text-sm transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                  style={{ animationDelay: `${(i + 3) * 100}ms` }}
-                >
-                  {tag}
-                </Link>
-              ))}
+            <p>The job platform built for people who prefer signal over noise. Curated roles. Real data. Zero spam.</p>
+            <div className="ww-hero-buttons">
+              <Link href="/jobs" className="ww-btn ww-btn-primary">Browse Jobs</Link>
+              <Link href="/companies" className="ww-btn ww-btn-ghost">For Companies →</Link>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Stats */}
-      <section ref={statsRef.ref} className="border-b border-gray-200 bg-white relative overflow-hidden dark:bg-neutral-800 dark:border-neutral-700">
-        <div className="absolute inset-0 bg-gradient-to-r from-sky-50/50 via-transparent to-violet-50/50 dark:from-sky-500/5 dark:to-violet-500/5" />
-        <div className="container-app py-12 relative">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map((stat, i) => (
-              <div
-                key={i}
-                className={`text-center ${statsRef.isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}
-                style={{ animationDelay: `${i * 150}ms` }}
-              >
-                <div className="text-3xl mb-2">{stat.icon}</div>
-                <div className="text-3xl sm:text-4xl font-bold gradient-text">{stat.value}</div>
-                <div className="text-sm text-gray-500 dark:text-neutral-400 mt-1 font-medium">{stat.label}</div>
+        {/* Stats */}
+        <section className="ww-section">
+          <div className="ww-stats-grid">
+            {STATS.map((stat) => (
+              <div key={stat.label} className="ww-stat-card ww-fade-up">
+                <div className="ww-stat-number" data-target={stat.target}>0</div>
+                <div className="ww-stat-label">{stat.label}</div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Features */}
-      <section ref={featuresRef.ref} className="section bg-gray-50 relative overflow-hidden dark:bg-neutral-900">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-100/30 dark:bg-sky-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-violet-100/30 dark:bg-violet-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-        <div className="container-app relative">
-          <div className={`text-center max-w-2xl mx-auto mb-16 ${featuresRef.isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
-            <span className="inline-block px-4 py-1.5 rounded-full bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 text-sm font-semibold mb-4">
-              ✨ Features
-            </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-neutral-100 mb-4 text-balance">
-              {t('features.title')}
-            </h2>
-            <p className="text-lg text-gray-500 dark:text-neutral-400 text-balance">
-              {t('features.subtitle')}
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((feature, i) => (
-              <div
-                key={String(feature.title)}
-                className={`group card-hover p-6 relative overflow-hidden ${featuresRef.isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
-                <div className={`w-14 h-14 rounded-2xl ${feature.bg} ${feature.text} flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg`}>
-                  {feature.icon}
+        {/* Featured Jobs */}
+        <section className="ww-section" id="ww-jobs">
+          <div className="ww-section-label ww-fade-up">Featured Positions</div>
+          <h2 className="ww-section-title ww-fade-up">Hot Jobs Right Now</h2>
+          <p className="ww-section-sub ww-fade-up">Curated roles from top companies, matched to your skills and ambition.</p>
+          <div className="ww-jobs-grid">
+            {JOBS.map((job) => (
+              <div key={job.title} className="ww-job-card ww-fade-up ww-tilt">
+                <div className="ww-job-company">{job.company}</div>
+                <div className="ww-job-title">{job.title}</div>
+                <div className="ww-job-tags">
+                  {job.tags.map((tag) => (
+                    <span key={tag} className="ww-job-tag">{tag}</span>
+                  ))}
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-neutral-100 mb-2 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">{String(feature.title)}</h3>
-                <p className="text-gray-500 dark:text-neutral-400 text-sm leading-relaxed">{String(feature.description)}</p>
+                <div className="ww-job-salary">{job.salary}</div>
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Company Marquee */}
+        <div className="ww-marquee-section">
+          <div className="ww-marquee-track">{marqueeItems}</div>
         </div>
-      </section>
 
-      {/* Pricing */}
-      <section ref={pricingRef.ref} className="section bg-white relative overflow-hidden dark:bg-neutral-800">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-50/50 via-transparent to-transparent dark:from-sky-500/5" />
-        <div className="container-app relative">
-          <div className={`text-center max-w-2xl mx-auto mb-16 ${pricingRef.isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
-            <span className="inline-block px-4 py-1.5 rounded-full bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 text-sm font-semibold mb-4">
-              💎 Pricing
-            </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-neutral-100 mb-4 text-balance">
-              {t('pricing.title')}
-            </h2>
-            <p className="text-lg text-gray-500 dark:text-neutral-400 text-balance">
-              {t('pricing.subtitle')}
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className={`card p-8 relative hover-lift ${pricingRef.isVisible ? 'animate-fade-in-left animate-delay-200' : 'opacity-0'}`}>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-neutral-100 mb-2">{String(t('pricing.free.name'))}</h3>
-              <div className="mb-6">
-                <span className="text-5xl font-bold text-gray-900 dark:text-neutral-100">$0</span>
+        {/* How It Works */}
+        <section className="ww-section">
+          <div className="ww-section-label ww-fade-up">How It Works</div>
+          <h2 className="ww-section-title ww-fade-up">Three Steps to Your New Role</h2>
+          <p className="ww-section-sub ww-fade-up">Our AI does the heavy lifting so you can focus on what matters.</p>
+          <div className="ww-steps-grid">
+            {STEPS.map((step) => (
+              <div key={step.num} className="ww-step-card ww-fade-up">
+                <span className="ww-step-num">{step.num}</span>
+                <span className="ww-step-icon">{step.icon}</span>
+                <h3>{step.title}</h3>
+                <p>{step.desc}</p>
               </div>
-              <ul className="space-y-4 mb-8">
-                {(t('pricing.free.features') as unknown as string[]).map((feature: string, i: number) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-gray-600 dark:text-neutral-300">
-                    <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    {feature}
+            ))}
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section className="ww-section">
+          <div className="ww-section-label ww-fade-up">Success Stories</div>
+          <h2 className="ww-section-title ww-fade-up">Loved by Professionals</h2>
+          <p className="ww-section-sub ww-fade-up">Real people, real results. Here is what our community says.</p>
+          <div className="ww-testimonials-grid">
+            {TESTIMONIALS.map((t) => (
+              <div key={t.initials} className="ww-test-card ww-fade-up">
+                <p className="ww-test-text">{t.text}</p>
+                <div className="ww-test-author">
+                  <div className="ww-test-avatar">{t.initials}</div>
+                  <div>
+                    <div className="ww-test-name">{t.name}</div>
+                    <div className="ww-test-role">{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section className="ww-pricing-section">
+          <div className="ww-section-label ww-fade-up">💎 Pricing</div>
+          <h2 className="ww-section-title ww-fade-up">{String(t('pricing.title'))}</h2>
+          <p className="ww-section-sub ww-fade-up" style={{ margin: '0 auto 60px' }}>{String(t('pricing.subtitle'))}</p>
+          <div className="ww-pricing-grid">
+            {/* Free Plan */}
+            <div className="ww-pricing-card ww-fade-up">
+              <div className="ww-pricing-name">{String(t('pricing.free.name'))}</div>
+              <div className="ww-pricing-price">$0</div>
+              <ul className="ww-pricing-features">
+                {(t('pricing.free.features') as unknown as string[]).map((feat: string, i: number) => (
+                  <li key={i}>
+                    <span className="ww-check">✓</span>
+                    {feat}
                   </li>
                 ))}
               </ul>
-              <Link href="/auth/register" className="btn btn-secondary w-full btn-lg hover:scale-105 transition-transform duration-300">
+              <Link href="/auth/register" className="ww-pricing-btn ww-pricing-btn-outline">
                 {String(t('pricing.getStarted'))}
               </Link>
             </div>
-
-            <div className={`card p-8 relative gradient-border shadow-xl shadow-sky-500/10 hover-lift ${pricingRef.isVisible ? 'animate-fade-in-right animate-delay-300' : 'opacity-0'}`}>
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-sky-500 to-violet-500 text-white text-xs font-bold rounded-full shadow-lg shadow-sky-500/30">
-                {String(t('pricing.premium.badge'))}
+            {/* Premium Plan */}
+            <div className="ww-pricing-card ww-featured ww-fade-up">
+              <div className="ww-pricing-badge">{String(t('pricing.premium.badge'))}</div>
+              <div className="ww-pricing-name">{String(t('pricing.premium.name'))}</div>
+              <div className="ww-pricing-price">
+                $9.99<span className="ww-pricing-period">{String(t('pricing.premium.period'))}</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-neutral-100 mb-2">{String(t('pricing.premium.name'))}</h3>
-              <div className="mb-6">
-                <span className="text-5xl font-bold gradient-text">$9.99</span>
-                <span className="text-gray-500 dark:text-neutral-400 text-sm">{String(t('pricing.premium.period'))}</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {(t('pricing.premium.features') as unknown as string[]).map((feature: string, i: number) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-gray-600 dark:text-neutral-300">
-                    <div className="w-5 h-5 rounded-full bg-sky-100 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    {feature}
+              <ul className="ww-pricing-features">
+                {(t('pricing.premium.features') as unknown as string[]).map((feat: string, i: number) => (
+                  <li key={i}>
+                    <span className="ww-check">✓</span>
+                    {feat}
                   </li>
                 ))}
               </ul>
-              <Link href="/auth/register" className="btn btn-lg w-full hover:scale-105 transition-transform duration-300 bg-gradient-to-r from-sky-500 to-violet-500 hover:from-sky-600 hover:to-violet-600 text-white shadow-lg shadow-sky-500/25">
+              <Link href="/auth/register" className="ww-pricing-btn ww-pricing-btn-primary">
                 {String(t('pricing.getStarted'))}
               </Link>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA */}
-      <section ref={ctaRef.ref} className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #8b5cf6 100%)' }}>
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-60 h-60 bg-white/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-float animate-delay-500" />
-        </div>
-        <div className="container-app text-center py-20 relative">
-          <div className={ctaRef.isVisible ? 'animate-fade-in-up' : 'opacity-0'}>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-balance text-white">
-              {t('cta.title')}
-            </h2>
-            <p className="text-lg text-sky-100/90 mb-10 max-w-xl mx-auto text-balance">
-              {t('cta.subtitle')}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/auth/register" className="btn bg-white text-sky-600 hover:bg-gray-100 btn-lg shadow-2xl hover:scale-105 transition-all duration-300 font-bold">
-                {String(t('cta.createAccount'))}
-              </Link>
-              <Link href="/jobs" className="btn bg-white/10 text-white hover:bg-white/20 btn-lg border-2 border-white/30 backdrop-blur-sm hover:scale-105 transition-all duration-300 font-semibold">
-                {String(t('cta.browseJobs'))}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+        {/* CTA */}
+        <section className="ww-cta">
+          <h2 className="ww-fade-up">
+            Ready to <span className="ww-gradient">Wave</span> Your Future?
+          </h2>
+          <p className="ww-fade-up">Join the platform that is redefining how the world works in 2026.</p>
+          <Link href="/auth/register" className="ww-btn ww-btn-primary ww-fade-up">
+            Create Free Account
+          </Link>
+        </section>
+      </div>
+    </>
   );
 }

@@ -15,15 +15,15 @@ export function Navbar() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white/90 dark:bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/[0.06] shadow-sm dark:shadow-none">
       <div className="container-app">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 via-accent-500 to-coral-500 flex items-center justify-center shadow-lg shadow-primary-500/25 group-hover:shadow-xl group-hover:shadow-primary-500/40 group-hover:scale-110 transition-all duration-300">
-              <span className="text-white font-bold text-base">J</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-400 via-accent-500 to-accent-400 flex items-center justify-center shadow-lg shadow-primary-400/25 group-hover:shadow-xl group-hover:shadow-primary-400/40 group-hover:scale-110 transition-all duration-300">
+              <span className="text-white font-bold text-base">W</span>
             </div>
-            <span className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-accent-600">{APP_NAME}</span>
+            <span className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-accent-500">{APP_NAME}</span>
           </Link>
 
           {/* Desktop nav */}
@@ -36,19 +36,19 @@ export function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative px-4 py-2 text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors duration-300 rounded-lg hover:bg-primary-50/50"
+                className="relative px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300 rounded-lg hover:bg-primary-50/50 dark:hover:bg-white/5"
               >
                 {item.label}
               </Link>
             ))}
           </div>
 
-          {/* Auth buttons & Language selector */}
+          {/* Auth buttons & Controls */}
           <div className="hidden md:flex items-center gap-2">
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800/80 transition-all duration-300 hover:scale-110"
+              className="p-2.5 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 dark:text-gray-400 dark:hover:text-primary-400 dark:hover:bg-white/5 transition-all duration-300 hover:scale-110"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
@@ -66,7 +66,7 @@ export function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setLangOpen(!langOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 transition-all duration-300"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/5 transition-all duration-300"
               >
                 <span className="text-lg">{LOCALE_FLAGS[locale]}</span>
                 <span className="hidden lg:inline">{LOCALE_NAMES[locale]}</span>
@@ -75,21 +75,21 @@ export function Navbar() {
                 </svg>
               </button>
               {langOpen && (
-                <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-scale-in overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-[#18181b] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 py-2 z-50 animate-scale-in overflow-hidden">
                   {(['en', 'az', 'ru'] as Locale[]).map((lang) => (
                     <button
                       key={lang}
                       onClick={() => { setLocale(lang); setLangOpen(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all duration-200 ${
                         locale === lang
-                          ? 'bg-gradient-to-r from-primary-50 to-accent-50 text-primary-700 font-semibold'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          ? 'bg-gradient-to-r from-primary-50 to-accent-50 dark:from-primary-400/10 dark:to-accent-500/10 text-primary-700 dark:text-primary-400 font-semibold'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
                       }`}
                     >
                       <span className="text-lg">{LOCALE_FLAGS[lang]}</span>
                       <span>{LOCALE_NAMES[lang]}</span>
                       {locale === lang && (
-                        <svg className="w-4 h-4 ml-auto text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 ml-auto text-primary-500 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       )}
@@ -116,7 +116,7 @@ export function Navbar() {
                 <Link href="/auth/login" className="btn btn-ghost btn-sm">
                   {t('nav.signIn')}
                 </Link>
-                <Link href="/auth/register" className="btn btn-primary btn-sm shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30">
+                <Link href="/auth/register" className="btn btn-primary btn-sm shadow-lg shadow-primary-400/25 hover:shadow-xl hover:shadow-primary-400/30">
                   {t('nav.signUp')}
                 </Link>
               </>
@@ -126,29 +126,29 @@ export function Navbar() {
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 rounded-xl hover:bg-gray-100/80 transition-colors"
+            className="md:hidden p-2 rounded-xl hover:bg-gray-100/80 dark:hover:bg-white/5 transition-colors"
           >
             <div className="w-6 h-5 relative flex flex-col justify-between">
-              <span className={`w-full h-0.5 bg-gray-700 rounded transition-all duration-300 ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} />
-              <span className={`w-full h-0.5 bg-gray-700 rounded transition-all duration-300 ${mobileOpen ? 'opacity-0' : ''}`} />
-              <span className={`w-full h-0.5 bg-gray-700 rounded transition-all duration-300 ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+              <span className={`w-full h-0.5 bg-gray-700 dark:bg-gray-300 rounded transition-all duration-300 ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} />
+              <span className={`w-full h-0.5 bg-gray-700 dark:bg-gray-300 rounded transition-all duration-300 ${mobileOpen ? 'opacity-0' : ''}`} />
+              <span className={`w-full h-0.5 bg-gray-700 dark:bg-gray-300 rounded transition-all duration-300 ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} />
             </div>
           </button>
         </div>
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100 animate-slide-down">
+          <div className="md:hidden py-4 border-t border-gray-100 dark:border-white/[0.06] animate-slide-down">
             <div className="flex flex-col gap-2">
               {/* Language & Theme Mobile */}
               <div className="px-3 py-2">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     {String(t('nav.language'))}
                   </div>
                   <button
                     onClick={toggleTheme}
-                    className="p-2 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800/80 transition-all duration-300"
+                    className="p-2 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 dark:text-gray-400 dark:hover:text-primary-400 dark:hover:bg-white/5 transition-all duration-300"
                     aria-label="Toggle theme"
                   >
                     {theme === 'dark' ? (
@@ -169,8 +169,8 @@ export function Navbar() {
                       onClick={() => { setLocale(lang); setMobileOpen(false); }}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm transition-all duration-300 ${
                         locale === lang
-                          ? 'bg-gradient-to-r from-primary-100 to-accent-100 text-primary-700 font-semibold shadow-sm'
-                          : 'bg-gray-100/80 text-gray-700 hover:bg-gray-200/80'
+                          ? 'bg-gradient-to-r from-primary-100 to-accent-100 dark:from-primary-400/15 dark:to-accent-500/15 text-primary-700 dark:text-primary-400 font-semibold shadow-sm'
+                          : 'bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-white/10'
                       }`}
                     >
                       <span>{LOCALE_FLAGS[lang]}</span>
@@ -179,7 +179,7 @@ export function Navbar() {
                   ))}
                 </div>
               </div>
-              <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent my-2" />
+              <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent my-2" />
               {[
                 { href: '/jobs', label: t('nav.jobs'), icon: '💼' },
                 { href: '/companies', label: t('nav.companies'), icon: '🏢' },
@@ -188,14 +188,14 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="px-3 py-2.5 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50/50 rounded-xl flex items-center gap-2 transition-all duration-300"
+                  className="px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-white/5 rounded-xl flex items-center gap-2 transition-all duration-300"
                   onClick={() => setMobileOpen(false)}
                 >
                   <span>{item.icon}</span>
                   {item.label}
                 </Link>
               ))}
-              <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent my-2" />
+              <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-white/10 to-transparent my-2" />
               {session ? (
                 <>
                   <Link href="/dashboard" className="btn btn-secondary btn-sm w-full" onClick={() => setMobileOpen(false)}>
@@ -210,7 +210,7 @@ export function Navbar() {
                   <Link href="/auth/login" className="btn btn-ghost btn-sm w-full" onClick={() => setMobileOpen(false)}>
                     {t('nav.signIn')}
                   </Link>
-                  <Link href="/auth/register" className="btn btn-primary btn-sm w-full shadow-lg shadow-primary-500/25" onClick={() => setMobileOpen(false)}>
+                  <Link href="/auth/register" className="btn btn-primary btn-sm w-full shadow-lg shadow-primary-400/25" onClick={() => setMobileOpen(false)}>
                     {t('nav.signUp')}
                   </Link>
                 </>
