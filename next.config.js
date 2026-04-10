@@ -11,7 +11,7 @@ const nextConfig = {
     ],
   },
   experimental: {
-    serverComponentsExternalPackages: ['@node-rs/bcrypt', 'ioredis'],
+    serverComponentsExternalPackages: ['@node-rs/bcrypt', 'ioredis', 'pino', 'pino-pretty', 'thread-stream'],
     serverActions: {
       bodySizeLimit: '10mb',
     },

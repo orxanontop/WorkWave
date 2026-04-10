@@ -13,7 +13,7 @@ export async function hashPassword(password: string, cost: number = 10): Promise
 }
 
 export async function verifyPassword(password: string, hashVal: string): Promise<boolean> {
-  return verify(hashVal, password);
+  return verify(password, hashVal);
 }
 
 export const authOptions: NextAuthOptions = {
