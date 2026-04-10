@@ -2,6 +2,7 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  setupFiles: ['dotenv/config'],
   testMatch: ['**/__tests__/integration/**/*.ts', '**/__tests__/unit/**/*.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {

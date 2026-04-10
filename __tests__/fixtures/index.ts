@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { hash } from '@node-rs/bcrypt';
 import * as jwt from 'jsonwebtoken';
 
-export const prisma = new PrismaClient();
+export { prisma };
 
 // ---------------------------------------------------------------------------
 // Test factories — create seeded records that can be cleaned up after tests
