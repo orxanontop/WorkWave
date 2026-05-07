@@ -41,3 +41,18 @@ redis_data/
 # Claude Code (personal AI assistant config)
 .claude/
 AGENTS.md
+
+# Python scripts (not part of Next.js app)
+*.py
+
+# Test/Generated HTML files
+*.html
+!src/**/*.html
+
+# Dev server logs
+dev-server.*
+
+# Temporary images/screenshots
+*.png
+!src/**/*.png
+!public/**/*.png
