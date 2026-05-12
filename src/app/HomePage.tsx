@@ -46,6 +46,20 @@ const TESTIMONIALS = [
   { text: '"As a hiring manager, WorkWave cut our time-to-hire by 60%. The candidate quality is consistently excellent."', initials: 'MJ', name: 'Marcus Johnson', role: 'VP Engineering at DataPulse' },
 ];
 
+const DARK_UNIVERSE = {
+  pointColor: 0x22d3ee,
+  pointOpacity: 0.7,
+  lineColor: 0x8b5cf6,
+  lineOpacity: 0.12,
+};
+
+const LIGHT_UNIVERSE = {
+  pointColor: 0x0f172a,
+  pointOpacity: 0.4,
+  lineColor: 0x111827,
+  lineOpacity: 0.16,
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatStatValue(current: number, target: number): string {
@@ -96,15 +110,43 @@ export default function HomePage() {
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const mat = new THREE.PointsMaterial({ size: 0.3, color: 0x22d3ee, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending });
+    const isDarkTheme = () => document.documentElement.classList.contains('dark');
+    const getUniverseTheme = () => (isDarkTheme() ? DARK_UNIVERSE : LIGHT_UNIVERSE);
+    const activeTheme = getUniverseTheme();
+    const mat = new THREE.PointsMaterial({
+      size: 0.3,
+      color: activeTheme.pointColor,
+      transparent: true,
+      opacity: activeTheme.pointOpacity,
+      blending: isDarkTheme() ? THREE.AdditiveBlending : THREE.NormalBlending,
+    });
     scene.add(new THREE.Points(geo, mat));
 
     const CONN_LIMIT = 100;
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending });
+    const lineMat = new THREE.LineBasicMaterial({
+      color: activeTheme.lineColor,
+      transparent: true,
+      opacity: activeTheme.lineOpacity,
+      blending: isDarkTheme() ? THREE.AdditiveBlending : THREE.NormalBlending,
+    });
     const lineGeo = new THREE.BufferGeometry();
     const linePositions = new Float32Array(CONN_LIMIT * CONN_LIMIT * 3);
     lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
     scene.add(new THREE.LineSegments(lineGeo, lineMat));
+
+    const applyUniverseTheme = () => {
+      const theme = getUniverseTheme();
+      const blending = isDarkTheme() ? THREE.AdditiveBlending : THREE.NormalBlending;
+      mat.color.setHex(theme.pointColor);
+      mat.opacity = theme.pointOpacity;
+      mat.blending = blending;
+      mat.needsUpdate = true;
+      lineMat.color.setHex(theme.lineColor);
+      lineMat.opacity = theme.lineOpacity;
+      lineMat.blending = blending;
+      lineMat.needsUpdate = true;
+    };
+    applyUniverseTheme();
 
     const mouse = { x: 0, y: 0 };
     const onMouseMove = (e: MouseEvent) => {
@@ -168,10 +210,14 @@ export default function HomePage() {
     };
     window.addEventListener('resize', onResize);
 
+    const themeObserver = new MutationObserver(applyUniverseTheme);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
     return () => {
       cancelAnimationFrame(animId);
       document.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('resize', onResize);
+      themeObserver.disconnect();
       renderer.dispose();
     };
   }, []);
@@ -387,6 +433,167 @@ export default function HomePage() {
         .ww-pricing-btn-outline:hover { border-color: #22d3ee; background: rgba(34,211,238,0.05); }
         .ww-pricing-btn-primary { background: linear-gradient(135deg, #22d3ee, #8b5cf6); color: #fff; box-shadow: 0 0 20px rgba(34,211,238,0.2); }
         .ww-pricing-btn-primary:hover { box-shadow: 0 0 35px rgba(34,211,238,0.4); transform: translateY(-2px); }
+
+        /* Theme-aware landing palette */
+        .ww-landing {
+          --ww-bg: #ffffff;
+          --ww-text: #0f172a;
+          --ww-heading: #0b1220;
+          --ww-muted: #475569;
+          --ww-muted-strong: #334155;
+          --ww-panel: rgba(255,255,255,0.88);
+          --ww-border: rgba(15,23,42,0.12);
+          --ww-border-hover: rgba(8,145,178,0.36);
+          --ww-featured-border: rgba(124,58,237,0.32);
+          --ww-accent: #0e7490;
+          --ww-purple: #6d28d9;
+          --ww-brand-gradient: linear-gradient(135deg, #0891b2, #7c3aed);
+          --ww-hero-gradient: linear-gradient(135deg, #0f172a 0%, #334155 48%, #0e7490 100%);
+          --ww-hero-overlay: radial-gradient(ellipse at center, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.58) 58%, #ffffff 92%);
+          --ww-card-highlight: linear-gradient(135deg, rgba(8,145,178,0.08), transparent 42%, rgba(124,58,237,0.08));
+          --ww-card-shadow: 0 18px 52px rgba(15,23,42,0.10);
+          --ww-tag-bg: rgba(124,58,237,0.12);
+          --ww-tag-text: #5b21b6;
+          --ww-marquee: rgba(15,23,42,0.24);
+          --ww-marquee-hover: rgba(15,23,42,0.52);
+          --ww-ghost-bg: rgba(255,255,255,0.7);
+          --ww-ghost-hover-bg: rgba(8,145,178,0.08);
+          --ww-cta-glow: rgba(8,145,178,0.12);
+          --ww-canvas-opacity: 0.46;
+          --ww-glow-opacity: 0.12;
+          background:
+            radial-gradient(circle at top left, rgba(8,145,178,0.10), transparent 32rem),
+            radial-gradient(circle at top right, rgba(124,58,237,0.10), transparent 30rem),
+            var(--ww-bg);
+          color: var(--ww-text);
+          color-scheme: light;
+        }
+
+        html.dark .ww-landing {
+          --ww-bg: #10131c;
+          --ww-text: #f8fafc;
+          --ww-heading: #f8fafc;
+          --ww-muted: #cbd5e1;
+          --ww-muted-strong: #e2e8f0;
+          --ww-panel: rgba(255,255,255,0.075);
+          --ww-border: rgba(226,232,240,0.16);
+          --ww-border-hover: rgba(103,232,249,0.42);
+          --ww-featured-border: rgba(196,181,253,0.40);
+          --ww-accent: #67e8f9;
+          --ww-purple: #c4b5fd;
+          --ww-brand-gradient: linear-gradient(135deg, #67e8f9, #c4b5fd);
+          --ww-hero-gradient: linear-gradient(135deg, #ffffff 0%, #dbeafe 48%, #67e8f9 100%);
+          --ww-hero-overlay: radial-gradient(ellipse at center, rgba(16,19,28,0.10) 0%, rgba(16,19,28,0.68) 62%, #10131c 92%);
+          --ww-card-highlight: linear-gradient(135deg, rgba(103,232,249,0.10), transparent 42%, rgba(196,181,253,0.10));
+          --ww-card-shadow: 0 24px 60px rgba(0,0,0,0.35);
+          --ww-tag-bg: rgba(196,181,253,0.18);
+          --ww-tag-text: #ddd6fe;
+          --ww-marquee: rgba(226,232,240,0.20);
+          --ww-marquee-hover: rgba(226,232,240,0.48);
+          --ww-ghost-bg: rgba(255,255,255,0.04);
+          --ww-ghost-hover-bg: rgba(255,255,255,0.09);
+          --ww-cta-glow: rgba(103,232,249,0.12);
+          --ww-canvas-opacity: 0.44;
+          --ww-glow-opacity: 0.14;
+          background:
+            radial-gradient(circle at top left, rgba(34,211,238,0.10), transparent 32rem),
+            radial-gradient(circle at top right, rgba(139,92,246,0.11), transparent 30rem),
+            var(--ww-bg);
+          color-scheme: dark;
+        }
+
+        .ww-hero-canvas { opacity: var(--ww-canvas-opacity); }
+        .ww-hero-overlay { background: var(--ww-hero-overlay); }
+        .ww-hero-glow { opacity: var(--ww-glow-opacity); }
+        .ww-hero-badge,
+        .ww-stat-card,
+        .ww-job-card,
+        .ww-step-card,
+        .ww-test-card,
+        .ww-pricing-card {
+          background: var(--ww-panel);
+          border-color: var(--ww-border);
+          box-shadow: var(--ww-card-shadow);
+        }
+
+        .ww-hero-badge,
+        .ww-hero p,
+        .ww-section-sub,
+        .ww-stat-label,
+        .ww-step-card p,
+        .ww-test-role,
+        .ww-cta p,
+        .ww-pricing-period,
+        .ww-pricing-features li {
+          color: var(--ww-muted);
+        }
+
+        .ww-hero h1,
+        .ww-section-title,
+        .ww-job-title,
+        .ww-job-salary,
+        .ww-step-card h3,
+        .ww-test-text,
+        .ww-test-name,
+        .ww-cta h2,
+        .ww-pricing-name {
+          color: var(--ww-heading);
+        }
+
+        .ww-hero h1 .ww-gradient,
+        .ww-gradient {
+          background: var(--ww-hero-gradient);
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
+        .ww-stat-number,
+        .ww-step-num,
+        .ww-pricing-price {
+          background: var(--ww-brand-gradient);
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
+        .ww-section-label,
+        .ww-job-company {
+          color: var(--ww-accent);
+        }
+
+        .ww-job-card::before { background: var(--ww-card-highlight); }
+        .ww-job-tag { background: var(--ww-tag-bg); color: var(--ww-tag-text); }
+        .ww-marquee-section { border-color: var(--ww-border); }
+        .ww-marquee-item { color: var(--ww-marquee); }
+        .ww-marquee-item:hover { color: var(--ww-marquee-hover); }
+        .ww-landing .ww-btn-ghost,
+        .ww-landing .ww-pricing-btn-outline {
+          background: var(--ww-ghost-bg);
+          border-color: var(--ww-border);
+          color: var(--ww-heading);
+        }
+        .ww-landing .ww-btn-ghost:hover,
+        .ww-landing .ww-pricing-btn-outline:hover {
+          border-color: var(--ww-border-hover);
+          background: var(--ww-ghost-hover-bg);
+        }
+        .ww-btn-primary,
+        .ww-pricing-btn-primary,
+        .ww-test-avatar,
+        .ww-pricing-badge {
+          background: var(--ww-brand-gradient);
+        }
+        .ww-stat-card:hover,
+        .ww-job-card:hover,
+        .ww-step-card:hover,
+        .ww-test-card:hover,
+        .ww-pricing-card:hover {
+          border-color: var(--ww-border-hover);
+        }
+        .ww-pricing-card.ww-featured { border-color: var(--ww-featured-border); }
+        .ww-pricing-features li .ww-check { background: var(--ww-tag-bg); color: var(--ww-accent); }
+        .ww-cta::before { background: radial-gradient(ellipse at center, var(--ww-cta-glow) 0%, transparent 62%); }
       `}</style>
 
       <div className="ww-landing">
