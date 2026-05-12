@@ -1,756 +1,1172 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import Script from 'next/script';
-import { useI18n } from '@/lib/i18n';
+import {
+  ArrowRight,
+  BadgeCheck,
+  Bell,
+  BriefcaseBusiness,
+  Building2,
+  CalendarClock,
+  Check,
+  CircleDollarSign,
+  Clock3,
+  FileText,
+  MapPin,
+  MessageSquare,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  UserRound,
+  Zap,
+} from 'lucide-react';
 
-// Three.js is loaded via CDN script tag — declare the global
-declare global {
-  interface Window {
-    THREE?: any; // eslint-disable-line
-  }
-}
+const FEATURE_TILES = [
+  {
+    title: 'Jobs',
+    subtitle: 'Live roles matched to your city, skills, and salary range.',
+    icon: BriefcaseBusiness,
+    preview: 'jobs',
+  },
+  {
+    title: 'Companies',
+    subtitle: 'Verified employers with open roles and transparent details.',
+    icon: Building2,
+    preview: 'companies',
+  },
+  {
+    title: 'Profiles',
+    subtitle: 'A focused applicant profile built for faster applications.',
+    icon: UserRound,
+    preview: 'profile',
+  },
+  {
+    title: 'Alerts',
+    subtitle: 'Shortlists, saved searches, and application updates in one place.',
+    icon: Bell,
+    preview: 'alerts',
+  },
+] as const;
 
-// ── Data ──────────────────────────────────────────────────────────────────────
+const SIGNALS = [
+  { icon: Search, label: 'Search' },
+  { icon: MapPin, label: 'Local' },
+  { icon: BadgeCheck, label: 'Verified' },
+  { icon: CircleDollarSign, label: 'Salary' },
+] as const;
 
-const STATS = [
-  { target: 2400000, label: 'Active Jobs Listed' },
-  { target: 850000, label: 'Companies Hiring' },
-  { target: 98, label: 'Match Accuracy' },
-  { target: 12, label: 'Days Avg. to Hire' },
-];
+const JOB_ROWS = [
+  { role: 'Product Designer', company: 'Northstar Labs', meta: 'Hybrid' },
+  { role: 'Frontend Engineer', company: 'Bluepeak Studio', meta: 'Remote' },
+  { role: 'Operations Lead', company: 'CivicWorks', meta: 'On-site' },
+] as const;
 
-const JOBS = [
-  { company: 'NeuralTech Labs', title: 'Senior AI Engineer', tags: ['Remote', 'ML', 'Python'], salary: '$185k - $240k' },
-  { company: 'QuantumFlow Inc', title: 'Full-Stack Architect', tags: ['Hybrid', 'React', 'Rust'], salary: '$160k - $210k' },
-  { company: 'CyberNova Systems', title: 'Security Operations Lead', tags: ['On-site', 'SOC', 'Zero Trust'], salary: '$170k - $220k' },
-  { company: 'DataPulse Analytics', title: 'VP of Engineering', tags: ['Remote', 'Leadership', 'Scale'], salary: '$220k - $300k' },
-];
-
-const MARQUEE_COMPANIES = [
-  'NeuralTech Labs', 'QuantumFlow', 'CyberNova', 'DataPulse',
-  'Synthwave AI', 'NovaByte', 'ArcTech', 'Vertex Dynamics',
-  'Phantom Digital', 'Zenith Systems',
-];
-
-const STEPS = [
-  { num: '01', icon: '🚀', title: 'Build Your Profile', desc: 'Import your resume, showcase your skills, and set your preferences. Our AI parses everything in seconds.' },
-  { num: '02', icon: '🤖', title: 'AI Smart Matching', desc: 'Our engine analyzes 200+ signals to surface roles that truly fit your skills, goals, and lifestyle.' },
-  { num: '03', icon: '✨', title: 'Apply & Interview', desc: 'One-click apply, AI interview prep, and real-time tracking. Land offers faster than ever.' },
-];
-
-const TESTIMONIALS = [
-  { text: '"WorkWave matched me with a role at a top AI lab in just 8 days. The salary transparency alone saved me from lowball offers."', initials: 'AK', name: 'Alex Kim', role: 'ML Engineer at NeuralTech' },
-  { text: '"The AI matching is unreal. Every recommended role felt handpicked. I got 3 offers within two weeks."', initials: 'SR', name: 'Sarah Reyes', role: 'Staff Engineer at QuantumFlow' },
-  { text: '"As a hiring manager, WorkWave cut our time-to-hire by 60%. The candidate quality is consistently excellent."', initials: 'MJ', name: 'Marcus Johnson', role: 'VP Engineering at DataPulse' },
-];
-
-const DARK_UNIVERSE = {
-  pointColor: 0x22d3ee,
-  pointOpacity: 0.7,
-  lineColor: 0x8b5cf6,
-  lineOpacity: 0.12,
-};
-
-const LIGHT_UNIVERSE = {
-  pointColor: 0x0f172a,
-  pointOpacity: 0.4,
-  lineColor: 0x111827,
-  lineOpacity: 0.16,
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatStatValue(current: number, target: number): string {
-  if (target === 98) return `${Math.round(current)}%`;
-  if (target === 12) return `${Math.round(current)}`;
-  if (target >= 1000000) {
-    const val = current / 1000000;
-    return current >= target
-      ? `${(target / 1000000).toFixed(1).replace(/\.0$/, '')}M`
-      : `${val.toFixed(1)}M`;
-  }
-  if (target >= 1000) return `${Math.round(current / 1000)}K`;
-  return `${Math.round(current)}`;
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
-
-export default function HomePage() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const threeInitialized = useRef(false);
-  const { t } = useI18n();
-
-  const initThreeJS = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || threeInitialized.current) return;
-    const THREE = window.THREE;
-    if (!THREE) return;
-
-    threeInitialized.current = true;
-
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.z = 50;
-
-    const PARTICLE_COUNT = 600;
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(PARTICLE_COUNT * 3);
-    const velocities: { x: number; y: number }[] = [];
-
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 100;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
-      velocities.push({ x: (Math.random() - 0.5) * 0.02, y: (Math.random() - 0.5) * 0.02 });
-    }
-
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const isDarkTheme = () => document.documentElement.classList.contains('dark');
-    const getUniverseTheme = () => (isDarkTheme() ? DARK_UNIVERSE : LIGHT_UNIVERSE);
-    const activeTheme = getUniverseTheme();
-    const mat = new THREE.PointsMaterial({
-      size: 0.3,
-      color: activeTheme.pointColor,
-      transparent: true,
-      opacity: activeTheme.pointOpacity,
-      blending: isDarkTheme() ? THREE.AdditiveBlending : THREE.NormalBlending,
-    });
-    scene.add(new THREE.Points(geo, mat));
-
-    const CONN_LIMIT = 100;
-    const lineMat = new THREE.LineBasicMaterial({
-      color: activeTheme.lineColor,
-      transparent: true,
-      opacity: activeTheme.lineOpacity,
-      blending: isDarkTheme() ? THREE.AdditiveBlending : THREE.NormalBlending,
-    });
-    const lineGeo = new THREE.BufferGeometry();
-    const linePositions = new Float32Array(CONN_LIMIT * CONN_LIMIT * 3);
-    lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
-    scene.add(new THREE.LineSegments(lineGeo, lineMat));
-
-    const applyUniverseTheme = () => {
-      const theme = getUniverseTheme();
-      const blending = isDarkTheme() ? THREE.AdditiveBlending : THREE.NormalBlending;
-      mat.color.setHex(theme.pointColor);
-      mat.opacity = theme.pointOpacity;
-      mat.blending = blending;
-      mat.needsUpdate = true;
-      lineMat.color.setHex(theme.lineColor);
-      lineMat.opacity = theme.lineOpacity;
-      lineMat.blending = blending;
-      lineMat.needsUpdate = true;
-    };
-    applyUniverseTheme();
-
-    const mouse = { x: 0, y: 0 };
-    const onMouseMove = (e: MouseEvent) => {
-      mouse.x = (e.clientX / window.innerWidth - 0.5) * 100;
-      mouse.y = -(e.clientY / window.innerHeight - 0.5) * 100;
-    };
-    document.addEventListener('mousemove', onMouseMove);
-
-    let animId: number;
-    function animate() {
-      animId = requestAnimationFrame(animate);
-      const p = geo.attributes.position.array as Float32Array;
-
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        p[i * 3] += velocities[i].x;
-        p[i * 3 + 1] += velocities[i].y;
-        const dx = p[i * 3] - mouse.x;
-        const dy = p[i * 3 + 1] - mouse.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 15) {
-          const f = 0.02 * (1 - dist / 15);
-          velocities[i].x += dx * f * 0.01;
-          velocities[i].y += dy * f * 0.01;
-        }
-        if (Math.abs(p[i * 3]) > 50) velocities[i].x *= -1;
-        if (Math.abs(p[i * 3 + 1]) > 50) velocities[i].y *= -1;
-      }
-      geo.attributes.position.needsUpdate = true;
-
-      const lp = lineGeo.attributes.position.array as Float32Array;
-      let li = 0;
-      const subset = Math.min(PARTICLE_COUNT, CONN_LIMIT);
-      for (let i = 0; i < subset; i++) {
-        for (let j = i + 1; j < subset; j++) {
-          const dx = p[i * 3] - p[j * 3];
-          const dy = p[i * 3 + 1] - p[j * 3 + 1];
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 18) {
-            lp[li * 6] = p[i * 3];
-            lp[li * 6 + 1] = p[i * 3 + 1];
-            lp[li * 6 + 2] = 0;
-            lp[li * 6 + 3] = p[j * 3];
-            lp[li * 6 + 4] = p[j * 3 + 1];
-            lp[li * 6 + 5] = 0;
-            li++;
-          }
-        }
-      }
-      for (let k = li; k < linePositions.length / 6; k++) {
-        lp[k * 6] = lp[k * 6 + 1] = lp[k * 6 + 2] = lp[k * 6 + 3] = lp[k * 6 + 4] = lp[k * 6 + 5] = 0;
-      }
-      lineGeo.attributes.position.needsUpdate = true;
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    const onResize = () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-    };
-    window.addEventListener('resize', onResize);
-
-    const themeObserver = new MutationObserver(applyUniverseTheme);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-
-    return () => {
-      cancelAnimationFrame(animId);
-      document.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('resize', onResize);
-      themeObserver.disconnect();
-      renderer.dispose();
-    };
-  }, []);
-
-  // Initialize Three.js on mount (if script already loaded) or on script load
-  useEffect(() => {
-    if (window.THREE) {
-      initThreeJS();
-    }
-  }, [initThreeJS]);
-
-  // Scroll reveal & counter animations
-  useEffect(() => {
-    // Fade-up observer
-    const fadeEls = document.querySelectorAll('.ww-fade-up');
-    const fadeObs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e, i) => {
-          if (e.isIntersecting) {
-            setTimeout(() => e.target.classList.add('ww-visible'), i * 80);
-            fadeObs.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.15 }
+function TilePreview({ type }: { type: (typeof FEATURE_TILES)[number]['preview'] }) {
+  if (type === 'jobs') {
+    return (
+      <div className="ww-preview-list">
+        {JOB_ROWS.map((job) => (
+          <div key={job.role} className="ww-preview-job">
+            <span className="ww-preview-dot" />
+            <div>
+              <span className="ww-preview-title">{job.role}</span>
+              <span className="ww-preview-muted">{job.company}</span>
+            </div>
+            <span className="ww-preview-pill">{job.meta}</span>
+          </div>
+        ))}
+      </div>
     );
-    fadeEls.forEach((el) => fadeObs.observe(el));
+  }
 
-    // Animated counters
-    const counterEls = document.querySelectorAll<HTMLElement>('.ww-stat-number');
-    const counterObs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          const el = entry.target as HTMLElement;
-          const target = parseInt(el.dataset.target || '0', 10);
-          let current = 0;
-          const totalSteps = 50;
-          const stepTime = 1500 / totalSteps;
-          const increment = target / totalSteps;
-
-          function tick() {
-            current += increment;
-            if (current >= target) current = target;
-            el.textContent = formatStatValue(current, target);
-            if (current < target) setTimeout(tick, stepTime);
-          }
-          tick();
-          counterObs.unobserve(el);
-        });
-      },
-      { threshold: 0.5 }
+  if (type === 'companies') {
+    return (
+      <div className="ww-preview-dashboard">
+        <div className="ww-preview-sidebar">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="ww-preview-main">
+          <div className="ww-preview-chart">
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="ww-preview-bars">
+            <span />
+            <span />
+          </div>
+        </div>
+      </div>
     );
-    counterEls.forEach((el) => counterObs.observe(el));
+  }
 
-    // 3D tilt on job cards
-    const tiltCards = document.querySelectorAll<HTMLElement>('.ww-tilt');
-    const onMove = (card: HTMLElement, e: MouseEvent) => {
-      const r = card.getBoundingClientRect();
-      const cx = ((e.clientX - r.left) / r.width - 0.5) * 2;
-      const cy = ((e.clientY - r.top) / r.height - 0.5) * 2;
-      card.style.transform = `perspective(800px) rotateY(${cx * 8}deg) rotateX(${-cy * 8}deg) scale3d(1.02,1.02,1.02)`;
-      card.style.transition = 'none';
-    };
-    const onLeave = (card: HTMLElement) => {
-      card.style.transform = '';
-      card.style.transition = 'transform 0.5s ease';
-    };
-    const handlers = Array.from(tiltCards).map((card) => {
-      const move = (e: MouseEvent) => onMove(card, e);
-      const leave = () => onLeave(card);
-      card.addEventListener('mousemove', move);
-      card.addEventListener('mouseleave', leave);
-      return { card, move, leave };
-    });
-
-    return () => {
-      fadeObs.disconnect();
-      counterObs.disconnect();
-      handlers.forEach(({ card, move, leave }) => {
-        card.removeEventListener('mousemove', move);
-        card.removeEventListener('mouseleave', leave);
-      });
-    };
-  }, []);
-
-  // Build marquee items (duplicated for seamless loop)
-  const marqueeItems = [...MARQUEE_COMPANIES, ...MARQUEE_COMPANIES].flatMap((name, i) => [
-    <span key={`name-${i}`} className="ww-marquee-item">{name}</span>,
-    <span key={`dot-${i}`} className="ww-marquee-item">•</span>,
-  ]);
+  if (type === 'profile') {
+    return (
+      <div className="ww-preview-profile">
+        <div className="ww-preview-avatar">
+          <UserRound size={28} />
+        </div>
+        <div className="ww-preview-profile-lines">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="ww-preview-skills">
+          <span>React</span>
+          <span>SQL</span>
+          <span>Ops</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
+    <div className="ww-preview-alerts">
+      {[CalendarClock, Clock3, Check].map((Icon, index) => (
+        <div key={index} className="ww-preview-alert">
+          <Icon size={17} />
+          <span />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function HomePage() {
+  return (
     <>
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
-        strategy="afterInteractive"
-        onLoad={initThreeJS}
-      />
-
       <style jsx global>{`
-        /* ── WorkWave Landing Scoped Styles ──────────────────────────── */
-        .ww-landing { background: #0a0a0f; color: #e2e8f0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-
-        /* Hero */
-        .ww-hero { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
-        .ww-hero-canvas { position: absolute; inset: 0; z-index: 0; }
-        .ww-hero-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 0%, #0a0a0f 75%); z-index: 1; }
-        .ww-hero-content { position: relative; z-index: 2; max-width: 820px; padding: 0 20px; }
-        .ww-hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px 6px 8px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); font-size: 0.8rem; color: #94a3b8; margin-bottom: 32px; backdrop-filter: blur(8px); }
-        .ww-hero-badge .ww-dot { width: 6px; height: 6px; border-radius: 50%; background: #14b8a6; box-shadow: 0 0 8px #14b8a6; }
-        .ww-hero h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 1.05; margin-bottom: 24px; letter-spacing: -1.5px; color: #e2e8f0; }
-        .ww-hero h1 .ww-gradient { background: linear-gradient(135deg, #fff 0%, #94a3b8 50%, #22d3ee 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .ww-hero p { font-size: 1.15rem; color: #94a3b8; max-width: 550px; margin: 0 auto 48px; line-height: 1.7; }
-        .ww-hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-        .ww-hero-glow { position: absolute; width: 500px; height: 500px; border-radius: 50%; filter: blur(120px); opacity: 0.15; z-index: 0; pointer-events: none; }
-        .ww-glow-cyan { background: #22d3ee; top: -100px; left: -100px; }
-        .ww-glow-purple { background: #8b5cf6; bottom: -100px; right: -100px; }
-
-        /* Buttons */
-        .ww-btn { padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; border: none; cursor: pointer; transition: all 0.3s; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; }
-        .ww-btn-primary { background: linear-gradient(135deg, #22d3ee, #8b5cf6); color: #fff; box-shadow: 0 0 20px rgba(34,211,238,0.3); }
-        .ww-btn-primary:hover { box-shadow: 0 0 35px rgba(34,211,238,0.5); transform: translateY(-2px); }
-        .ww-btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.08); color: #e2e8f0; }
-        .ww-btn-ghost:hover { border-color: #94a3b8; background: rgba(255,255,255,0.03); }
-
-        /* Sections */
-        .ww-section { padding: 100px 40px; max-width: 1200px; margin: 0 auto; }
-        .ww-section-label { display: inline-block; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: #22d3ee; margin-bottom: 12px; }
-        .ww-section-title { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; margin-bottom: 16px; color: #e2e8f0; }
-        .ww-section-sub { color: #94a3b8; max-width: 550px; margin-bottom: 60px; line-height: 1.7; }
-
-        /* Stats */
-        .ww-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
-        .ww-stat-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 32px; text-align: center; transition: transform 0.3s, border-color 0.3s; }
-        .ww-stat-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-4px); }
-        .ww-stat-number { font-size: 2.8rem; font-weight: 900; background: linear-gradient(135deg, #22d3ee, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .ww-stat-label { color: #94a3b8; font-size: 0.95rem; margin-top: 4px; }
-
-        /* Jobs */
-        .ww-jobs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
-        .ww-job-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px; transition: border-color 0.4s; cursor: pointer; position: relative; overflow: hidden; }
-        .ww-job-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(34,211,238,0.06), transparent 40%, rgba(139,92,246,0.06)); opacity: 0; transition: opacity 0.4s; border-radius: 16px; pointer-events: none; }
-        .ww-job-card:hover::before { opacity: 1; }
-        .ww-job-card:hover { border-color: rgba(34,211,238,0.3); }
-        .ww-job-company { font-size: 0.85rem; color: #22d3ee; font-weight: 600; margin-bottom: 8px; }
-        .ww-job-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; color: #e2e8f0; }
-        .ww-job-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-        .ww-job-tag { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; background: rgba(139,92,246,0.15); color: #8b5cf6; font-weight: 500; }
-        .ww-job-salary { font-size: 1rem; font-weight: 700; color: #fff; }
-
-        /* Marquee */
-        .ww-marquee-section { padding: 60px 0; overflow: hidden; border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08); }
-        .ww-marquee-track { display: flex; gap: 60px; animation: wwMarquee 25s linear infinite; width: max-content; }
-        .ww-marquee-item { font-size: 1.4rem; font-weight: 700; color: rgba(255,255,255,0.12); white-space: nowrap; letter-spacing: -0.5px; transition: color 0.3s; }
-        .ww-marquee-item:hover { color: rgba(255,255,255,0.3); }
-        @keyframes wwMarquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-
-        /* Steps */
-        .ww-steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; }
-        .ww-step-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 36px; position: relative; transition: border-color 0.3s; }
-        .ww-step-card:hover { border-color: rgba(34,211,238,0.2); }
-        .ww-step-num { font-size: 3rem; font-weight: 900; background: linear-gradient(135deg, #22d3ee, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0.35; position: absolute; top: 16px; right: 24px; }
-        .ww-step-icon { font-size: 2.2rem; margin-bottom: 20px; display: block; }
-        .ww-step-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; color: #e2e8f0; }
-        .ww-step-card p { color: #94a3b8; line-height: 1.6; font-size: 0.95rem; }
-
-        /* Testimonials */
-        .ww-testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
-        .ww-test-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 32px; transition: border-color 0.3s; }
-        .ww-test-card:hover { border-color: rgba(139,92,246,0.3); }
-        .ww-test-text { font-size: 1rem; line-height: 1.7; color: #e2e8f0; margin-bottom: 24px; font-style: italic; }
-        .ww-test-author { display: flex; align-items: center; gap: 12px; }
-        .ww-test-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #22d3ee, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem; flex-shrink: 0; }
-        .ww-test-name { font-weight: 600; font-size: 0.95rem; color: #e2e8f0; }
-        .ww-test-role { font-size: 0.8rem; color: #94a3b8; }
-
-        /* CTA */
-        .ww-cta { text-align: center; padding: 120px 40px; position: relative; overflow: hidden; }
-        .ww-cta::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(34,211,238,0.06) 0%, transparent 60%); pointer-events: none; }
-        .ww-cta h2 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; margin-bottom: 16px; position: relative; color: #e2e8f0; }
-        .ww-cta p { color: #94a3b8; margin-bottom: 36px; font-size: 1.1rem; position: relative; }
-
-        /* Animations */
-        .ww-fade-up { opacity: 0; transform: translateY(40px); transition: opacity 0.7s ease, transform 0.7s ease; }
-        .ww-fade-up.ww-visible { opacity: 1; transform: translateY(0); }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .ww-section { padding: 60px 20px; }
-          .ww-hero-buttons { flex-direction: column; align-items: center; }
-          .ww-cta { padding: 80px 20px; }
-          .ww-pricing-grid { grid-template-columns: 1fr; }
-          .ww-pricing-section { padding: 80px 20px; }
-        }
-
-        /* Pricing */
-        .ww-pricing-section { padding: 100px 40px; max-width: 1000px; margin: 0 auto; text-align: center; position: relative; }
-        .ww-pricing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; max-width: 900px; margin: 0 auto; }
-        .ww-pricing-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 40px 32px; text-align: left; position: relative; transition: border-color 0.3s, transform 0.3s; }
-        .ww-pricing-card:hover { border-color: rgba(34,211,238,0.2); transform: translateY(-4px); }
-        .ww-pricing-card.ww-featured { border-color: rgba(139,92,246,0.3); }
-        .ww-pricing-card.ww-featured::before { content: ''; position: absolute; top: -1px; left: 50%; transform: translateX(-50%); width: 200px; height: 2px; background: linear-gradient(90deg, transparent, #8b5cf6, #22d3ee, transparent); }
-        .ww-pricing-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); padding: 4px 16px; border-radius: 100px; background: linear-gradient(135deg, #8b5cf6, #22d3ee); color: #fff; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
-        .ww-pricing-name { font-size: 1.25rem; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
-        .ww-pricing-price { font-size: 3rem; font-weight: 900; margin-bottom: 8px; background: linear-gradient(135deg, #22d3ee, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.1; }
-        .ww-pricing-period { font-size: 0.85rem; color: #94a3b8; }
-        .ww-pricing-features { list-style: none; padding: 0; margin: 28px 0 32px; }
-        .ww-pricing-features li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: 0.9rem; color: #94a3b8; line-height: 1.5; }
-        .ww-pricing-features li .ww-check { width: 18px; height: 18px; border-radius: 50%; background: rgba(34,211,238,0.15); color: #22d3ee; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.65rem; margin-top: 2px; }
-        .ww-pricing-btn { display: block; width: 100%; padding: 14px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; border: none; cursor: pointer; transition: all 0.3s; font-family: 'Inter', sans-serif; text-align: center; text-decoration: none; }
-        .ww-pricing-btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; }
-        .ww-pricing-btn-outline:hover { border-color: #22d3ee; background: rgba(34,211,238,0.05); }
-        .ww-pricing-btn-primary { background: linear-gradient(135deg, #22d3ee, #8b5cf6); color: #fff; box-shadow: 0 0 20px rgba(34,211,238,0.2); }
-        .ww-pricing-btn-primary:hover { box-shadow: 0 0 35px rgba(34,211,238,0.4); transform: translateY(-2px); }
-
-        /* Theme-aware landing palette */
         .ww-landing {
-          --ww-bg: #ffffff;
-          --ww-text: #0f172a;
-          --ww-heading: #0b1220;
-          --ww-muted: #475569;
-          --ww-muted-strong: #334155;
-          --ww-panel: rgba(255,255,255,0.88);
-          --ww-border: rgba(15,23,42,0.12);
-          --ww-border-hover: rgba(8,145,178,0.36);
-          --ww-featured-border: rgba(124,58,237,0.32);
-          --ww-accent: #0e7490;
-          --ww-purple: #6d28d9;
-          --ww-brand-gradient: linear-gradient(135deg, #0891b2, #7c3aed);
-          --ww-hero-gradient: linear-gradient(135deg, #0f172a 0%, #334155 48%, #0e7490 100%);
-          --ww-hero-overlay: radial-gradient(ellipse at center, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.58) 58%, #ffffff 92%);
-          --ww-card-highlight: linear-gradient(135deg, rgba(8,145,178,0.08), transparent 42%, rgba(124,58,237,0.08));
-          --ww-card-shadow: 0 18px 52px rgba(15,23,42,0.10);
-          --ww-tag-bg: rgba(124,58,237,0.12);
-          --ww-tag-text: #5b21b6;
-          --ww-marquee: rgba(15,23,42,0.24);
-          --ww-marquee-hover: rgba(15,23,42,0.52);
-          --ww-ghost-bg: rgba(255,255,255,0.7);
-          --ww-ghost-hover-bg: rgba(8,145,178,0.08);
-          --ww-cta-glow: rgba(8,145,178,0.12);
-          --ww-canvas-opacity: 0.46;
-          --ww-glow-opacity: 0.12;
-          background:
-            radial-gradient(circle at top left, rgba(8,145,178,0.10), transparent 32rem),
-            radial-gradient(circle at top right, rgba(124,58,237,0.10), transparent 30rem),
-            var(--ww-bg);
-          color: var(--ww-text);
-          color-scheme: light;
-        }
-
-        html.dark .ww-landing {
           --ww-bg: #10131c;
+          --ww-bg-soft: rgba(255, 255, 255, 0.04);
+          --ww-panel: rgba(255, 255, 255, 0.075);
+          --ww-panel-strong: rgba(255, 255, 255, 0.11);
           --ww-text: #f8fafc;
           --ww-heading: #f8fafc;
           --ww-muted: #cbd5e1;
-          --ww-muted-strong: #e2e8f0;
-          --ww-panel: rgba(255,255,255,0.075);
-          --ww-border: rgba(226,232,240,0.16);
-          --ww-border-hover: rgba(103,232,249,0.42);
-          --ww-featured-border: rgba(196,181,253,0.40);
+          --ww-muted-soft: #94a3b8;
+          --ww-border: rgba(226, 232, 240, 0.16);
+          --ww-border-strong: rgba(103, 232, 249, 0.42);
           --ww-accent: #67e8f9;
+          --ww-accent-strong: #22d3ee;
           --ww-purple: #c4b5fd;
+          --ww-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
           --ww-brand-gradient: linear-gradient(135deg, #67e8f9, #c4b5fd);
-          --ww-hero-gradient: linear-gradient(135deg, #ffffff 0%, #dbeafe 48%, #67e8f9 100%);
-          --ww-hero-overlay: radial-gradient(ellipse at center, rgba(16,19,28,0.10) 0%, rgba(16,19,28,0.68) 62%, #10131c 92%);
-          --ww-card-highlight: linear-gradient(135deg, rgba(103,232,249,0.10), transparent 42%, rgba(196,181,253,0.10));
-          --ww-card-shadow: 0 24px 60px rgba(0,0,0,0.35);
-          --ww-tag-bg: rgba(196,181,253,0.18);
-          --ww-tag-text: #ddd6fe;
-          --ww-marquee: rgba(226,232,240,0.20);
-          --ww-marquee-hover: rgba(226,232,240,0.48);
-          --ww-ghost-bg: rgba(255,255,255,0.04);
-          --ww-ghost-hover-bg: rgba(255,255,255,0.09);
-          --ww-cta-glow: rgba(103,232,249,0.12);
-          --ww-canvas-opacity: 0.44;
-          --ww-glow-opacity: 0.14;
+          min-height: calc(100vh - 4rem);
+          overflow: hidden;
           background:
-            radial-gradient(circle at top left, rgba(34,211,238,0.10), transparent 32rem),
-            radial-gradient(circle at top right, rgba(139,92,246,0.11), transparent 30rem),
+            radial-gradient(circle at 16% 8%, rgba(34, 211, 238, 0.14), transparent 29rem),
+            radial-gradient(circle at 86% 5%, rgba(139, 92, 246, 0.14), transparent 27rem),
             var(--ww-bg);
-          color-scheme: dark;
+          color: var(--ww-text);
         }
 
-        .ww-hero-canvas { opacity: var(--ww-canvas-opacity); }
-        .ww-hero-overlay { background: var(--ww-hero-overlay); }
-        .ww-hero-glow { opacity: var(--ww-glow-opacity); }
-        .ww-hero-badge,
-        .ww-stat-card,
-        .ww-job-card,
-        .ww-step-card,
-        .ww-test-card,
-        .ww-pricing-card {
-          background: var(--ww-panel);
-          border-color: var(--ww-border);
-          box-shadow: var(--ww-card-shadow);
+        .ww-loader {
+          --ww-bg: #10131c;
+          --ww-heading: #f8fafc;
+          --ww-accent: #67e8f9;
+          --ww-brand-gradient: linear-gradient(135deg, #67e8f9, #c4b5fd);
+          position: fixed;
+          inset: 0;
+          z-index: 80;
+          overflow: hidden;
+          pointer-events: none;
+          background:
+            radial-gradient(circle at 50% 48%, rgba(34, 211, 238, 0.18), transparent 18rem),
+            radial-gradient(circle at 60% 51%, rgba(139, 92, 246, 0.18), transparent 20rem),
+            linear-gradient(135deg, #0d1b2a 0%, #10131c 48%, #1c1635 100%),
+            var(--ww-bg);
+          animation: wwLoaderVeil 2.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
-        .ww-hero-badge,
-        .ww-hero p,
-        .ww-section-sub,
-        .ww-stat-label,
-        .ww-step-card p,
-        .ww-test-role,
-        .ww-cta p,
-        .ww-pricing-period,
-        .ww-pricing-features li {
-          color: var(--ww-muted);
+        .ww-loader-brand {
+          --ww-loader-left: max(1rem, calc((100vw - 1280px) / 2 + 2rem));
+          position: fixed;
+          left: 50%;
+          top: 50%;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.85rem;
+          transform: translate(-50%, -50%) scale(1.08);
+          transform-origin: left center;
+          animation: wwLoaderBrand 1.05s 1.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
-        .ww-hero h1,
-        .ww-section-title,
-        .ww-job-title,
-        .ww-job-salary,
-        .ww-step-card h3,
-        .ww-test-text,
-        .ww-test-name,
-        .ww-cta h2,
-        .ww-pricing-name {
-          color: var(--ww-heading);
+        .ww-loader-logo {
+          display: grid;
+          width: 4rem;
+          height: 4rem;
+          place-items: center;
+          border-radius: 1.25rem;
+          background: var(--ww-brand-gradient);
+          color: #ffffff;
+          font-size: 1.6rem;
+          font-weight: 900;
+          box-shadow: 0 24px 70px rgba(34, 211, 238, 0.34);
+          animation:
+            wwLogoPop 380ms cubic-bezier(0.22, 1, 0.36, 1) both,
+            wwLogoBreath 780ms 380ms ease-in-out infinite alternate;
         }
 
-        .ww-hero h1 .ww-gradient,
-        .ww-gradient {
-          background: var(--ww-hero-gradient);
+        .ww-loader-name {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.01em;
+          background: var(--ww-brand-gradient);
           background-clip: text;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
+          color: var(--ww-heading);
+          font-size: clamp(2rem, 4vw, 2.7rem);
+          font-weight: 900;
+          letter-spacing: 0;
+          white-space: nowrap;
         }
 
-        .ww-stat-number,
-        .ww-step-num,
-        .ww-pricing-price {
+        .ww-loader-name span {
+          display: inline-block;
+          background: var(--ww-brand-gradient);
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: var(--ww-heading);
+          opacity: 0;
+          transform: translateY(0.35em);
+          animation: wwTypeLetter 120ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .ww-loader-name span:nth-child(1) { animation-delay: 220ms; }
+        .ww-loader-name span:nth-child(2) { animation-delay: 300ms; }
+        .ww-loader-name span:nth-child(3) { animation-delay: 380ms; }
+        .ww-loader-name span:nth-child(4) { animation-delay: 460ms; }
+        .ww-loader-name span:nth-child(5) { animation-delay: 540ms; }
+        .ww-loader-name span:nth-child(6) { animation-delay: 620ms; }
+        .ww-loader-name span:nth-child(7) { animation-delay: 700ms; }
+        .ww-loader-name span:nth-child(8) { animation-delay: 780ms; }
+
+        .ww-loader-name::after {
+          content: '';
+          width: 0.08em;
+          height: 0.95em;
+          margin-left: 0.08em;
+          border-radius: 999px;
+          background: var(--ww-accent);
+          box-shadow: 0 0 18px rgba(103, 232, 249, 0.55);
+          animation:
+            wwCaretBlink 520ms steps(1, end) infinite,
+            wwCaretOut 180ms 1.08s ease-out forwards;
+        }
+
+        html:not(.dark) .ww-landing {
+          --ww-bg: #ffffff;
+          --ww-bg-soft: rgba(15, 23, 42, 0.035);
+          --ww-panel: rgba(255, 255, 255, 0.88);
+          --ww-panel-strong: rgba(248, 250, 252, 0.96);
+          --ww-text: #0f172a;
+          --ww-heading: #0b1220;
+          --ww-muted: #475569;
+          --ww-muted-soft: #64748b;
+          --ww-border: rgba(15, 23, 42, 0.12);
+          --ww-border-strong: rgba(8, 145, 178, 0.36);
+          --ww-accent: #0e7490;
+          --ww-accent-strong: #0891b2;
+          --ww-purple: #6d28d9;
+          --ww-shadow: 0 18px 52px rgba(15, 23, 42, 0.1);
+          --ww-brand-gradient: linear-gradient(135deg, #0891b2, #7c3aed);
+          background:
+            radial-gradient(circle at 16% 8%, rgba(8, 145, 178, 0.12), transparent 29rem),
+            radial-gradient(circle at 86% 5%, rgba(124, 58, 237, 0.12), transparent 27rem),
+            var(--ww-bg);
+        }
+
+        html:not(.dark) .ww-loader {
+          --ww-bg: #ffffff;
+          --ww-heading: #0b1220;
+          --ww-accent: #0e7490;
+          --ww-brand-gradient: linear-gradient(135deg, #0891b2, #7c3aed);
+          background:
+            radial-gradient(circle at 50% 48%, rgba(8, 145, 178, 0.15), transparent 18rem),
+            radial-gradient(circle at 60% 51%, rgba(124, 58, 237, 0.15), transparent 20rem),
+            linear-gradient(135deg, #f8fafc 0%, #eefaff 48%, #f4f0ff 100%),
+            var(--ww-bg);
+        }
+
+        .ww-landing-shell {
+          width: min(100% - 2rem, 1280px);
+          margin: 0 auto;
+          padding: 4.25rem 0 7rem;
+          opacity: 0;
+          animation: wwShellReveal 0.65s 2.58s ease-out forwards;
+        }
+
+        .ww-reference-hero {
+          display: flex;
+          min-height: 34rem;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+        }
+
+        .ww-announce {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          margin-bottom: 2rem;
+          padding: 0.35rem 0.85rem 0.35rem 0.42rem;
+          border: 1px solid var(--ww-border);
+          border-radius: 999px;
+          background: var(--ww-bg-soft);
+          color: var(--ww-muted);
+          font-size: 0.82rem;
+          font-weight: 600;
+          box-shadow: var(--ww-shadow);
+          backdrop-filter: blur(16px);
+          animation: wwFadeUp 0.62s 2.68s ease-out both;
+        }
+
+        .ww-announce strong {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          border-radius: 999px;
+          background: var(--ww-brand-gradient);
+          color: #ffffff;
+          padding: 0.25rem 0.55rem;
+          font-size: 0.75rem;
+        }
+
+        .ww-reference-title {
+          max-width: 850px;
+          color: var(--ww-heading);
+          font-size: clamp(2.75rem, 7vw, 5.9rem);
+          font-weight: 900;
+          line-height: 0.96;
+          letter-spacing: 0;
+          animation: wwTitleReveal 0.78s 2.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .ww-reference-title span {
+          display: block;
           background: var(--ww-brand-gradient);
           background-clip: text;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
 
-        .ww-section-label,
-        .ww-job-company {
+        .ww-reference-copy {
+          max-width: 640px;
+          margin: 1.25rem auto 0;
+          color: var(--ww-muted);
+          font-size: clamp(1rem, 2vw, 1.18rem);
+          line-height: 1.75;
+          animation: wwFadeUp 0.62s 2.98s ease-out both;
+        }
+
+        .ww-hero-actions {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 1rem;
+          margin-top: 2rem;
+          animation: wwFadeUp 0.62s 3.12s ease-out both;
+        }
+
+        .ww-action {
+          display: inline-flex;
+          min-height: 3rem;
+          align-items: center;
+          justify-content: center;
+          gap: 0.55rem;
+          border-radius: 0.75rem;
+          padding: 0 1.4rem;
+          font-size: 0.94rem;
+          font-weight: 800;
+          text-decoration: none;
+          transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+        }
+
+        .ww-action:hover {
+          transform: translateY(-2px);
+        }
+
+        .ww-action-primary {
+          background: var(--ww-brand-gradient);
+          color: #ffffff;
+          box-shadow: 0 16px 42px rgba(34, 211, 238, 0.22);
+        }
+
+        .ww-action-primary svg {
+          animation: wwArrowNudge 1.6s 1.6s ease-in-out infinite;
+        }
+
+        .ww-action-secondary {
+          border: 1px solid var(--ww-border);
+          background: var(--ww-panel);
+          color: var(--ww-heading);
+        }
+
+        .ww-action-secondary:hover {
+          border-color: var(--ww-border-strong);
+          background: var(--ww-panel-strong);
+        }
+
+        .ww-signal-row {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 1.1rem;
+          margin-top: 2rem;
+          color: var(--ww-muted-soft);
+          animation: wwFadeUp 0.62s 3.26s ease-out both;
+        }
+
+        .ww-signal {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.42rem;
+          font-size: 0.78rem;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+
+        .ww-signal svg {
+          color: var(--ww-accent);
+          animation: wwSignalGlow 2.4s ease-in-out infinite;
+        }
+
+        .ww-tile-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 1.35rem;
+          margin-top: 1.5rem;
+        }
+
+        .ww-feature-tile {
+          min-height: 16rem;
+          border: 1px solid var(--ww-border);
+          border-radius: 0.9rem;
+          background: var(--ww-panel);
+          box-shadow: var(--ww-shadow);
+          overflow: hidden;
+          transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
+          animation: wwTileReveal 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .ww-feature-tile:nth-child(1) { animation-delay: 3.42s; }
+        .ww-feature-tile:nth-child(2) { animation-delay: 3.5s; }
+        .ww-feature-tile:nth-child(3) { animation-delay: 3.58s; }
+        .ww-feature-tile:nth-child(4) { animation-delay: 3.66s; }
+
+        .ww-feature-tile:hover {
+          transform: translateY(-5px);
+          border-color: var(--ww-border-strong);
+          background: var(--ww-panel-strong);
+        }
+
+        .ww-tile-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          padding: 1.15rem 1.25rem 0;
+          color: var(--ww-heading);
+        }
+
+        .ww-tile-heading h2 {
+          font-size: 1.05rem;
+          font-weight: 900;
+        }
+
+        .ww-tile-heading svg {
           color: var(--ww-accent);
         }
 
-        .ww-job-card::before { background: var(--ww-card-highlight); }
-        .ww-job-tag { background: var(--ww-tag-bg); color: var(--ww-tag-text); }
-        .ww-marquee-section { border-color: var(--ww-border); }
-        .ww-marquee-item { color: var(--ww-marquee); }
-        .ww-marquee-item:hover { color: var(--ww-marquee-hover); }
-        .ww-landing .ww-btn-ghost,
-        .ww-landing .ww-pricing-btn-outline {
-          background: var(--ww-ghost-bg);
-          border-color: var(--ww-border);
-          color: var(--ww-heading);
+        .ww-tile-subtitle {
+          padding: 0.5rem 1.25rem 0;
+          color: var(--ww-muted);
+          font-size: 0.88rem;
+          line-height: 1.55;
         }
-        .ww-landing .ww-btn-ghost:hover,
-        .ww-landing .ww-pricing-btn-outline:hover {
-          border-color: var(--ww-border-hover);
-          background: var(--ww-ghost-hover-bg);
+
+        .ww-tile-preview {
+          padding: 1.1rem 1.25rem 1.25rem;
         }
-        .ww-btn-primary,
-        .ww-pricing-btn-primary,
-        .ww-test-avatar,
-        .ww-pricing-badge {
+
+        .ww-preview-list,
+        .ww-preview-alerts {
+          display: grid;
+          gap: 0.7rem;
+        }
+
+        .ww-preview-job,
+        .ww-preview-alert {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          min-height: 3rem;
+          border: 1px solid var(--ww-border);
+          border-radius: 0.7rem;
+          background: rgba(255, 255, 255, 0.04);
+          padding: 0.7rem;
+        }
+
+        html:not(.dark) .ww-preview-job,
+        html:not(.dark) .ww-preview-alert {
+          background: rgba(15, 23, 42, 0.035);
+        }
+
+        .ww-preview-dot {
+          width: 0.75rem;
+          height: 0.75rem;
+          flex: 0 0 auto;
+          border-radius: 999px;
           background: var(--ww-brand-gradient);
+          animation: wwDotPulse 1.9s ease-in-out infinite;
         }
-        .ww-stat-card:hover,
-        .ww-job-card:hover,
-        .ww-step-card:hover,
-        .ww-test-card:hover,
-        .ww-pricing-card:hover {
-          border-color: var(--ww-border-hover);
+
+        .ww-preview-title,
+        .ww-preview-muted {
+          display: block;
         }
-        .ww-pricing-card.ww-featured { border-color: var(--ww-featured-border); }
-        .ww-pricing-features li .ww-check { background: var(--ww-tag-bg); color: var(--ww-accent); }
-        .ww-cta::before { background: radial-gradient(ellipse at center, var(--ww-cta-glow) 0%, transparent 62%); }
+
+        .ww-preview-title {
+          color: var(--ww-heading);
+          font-size: 0.8rem;
+          font-weight: 850;
+        }
+
+        .ww-preview-muted {
+          color: var(--ww-muted-soft);
+          font-size: 0.72rem;
+        }
+
+        .ww-preview-pill {
+          margin-left: auto;
+          border-radius: 999px;
+          background: rgba(34, 211, 238, 0.14);
+          color: var(--ww-accent);
+          padding: 0.25rem 0.48rem;
+          font-size: 0.66rem;
+          font-weight: 850;
+        }
+
+        .ww-preview-dashboard {
+          display: grid;
+          min-height: 10rem;
+          grid-template-columns: 0.52fr 1fr;
+          gap: 0.75rem;
+        }
+
+        .ww-preview-sidebar,
+        .ww-preview-main,
+        .ww-preview-chart,
+        .ww-preview-profile,
+        .ww-preview-alerts {
+          border: 1px solid var(--ww-border);
+          border-radius: 0.85rem;
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        html:not(.dark) .ww-preview-sidebar,
+        html:not(.dark) .ww-preview-main,
+        html:not(.dark) .ww-preview-chart,
+        html:not(.dark) .ww-preview-profile,
+        html:not(.dark) .ww-preview-alerts {
+          background: rgba(15, 23, 42, 0.035);
+        }
+
+        .ww-preview-sidebar {
+          padding: 1rem 0.7rem;
+        }
+
+        .ww-preview-sidebar span,
+        .ww-preview-profile-lines span,
+        .ww-preview-alert span,
+        .ww-preview-bars span {
+          display: block;
+          height: 0.5rem;
+          border-radius: 999px;
+          background: rgba(203, 213, 225, 0.36);
+        }
+
+        html:not(.dark) .ww-preview-sidebar span,
+        html:not(.dark) .ww-preview-profile-lines span,
+        html:not(.dark) .ww-preview-alert span,
+        html:not(.dark) .ww-preview-bars span {
+          background: rgba(15, 23, 42, 0.16);
+        }
+
+        .ww-preview-sidebar span + span {
+          margin-top: 0.8rem;
+        }
+
+        .ww-preview-sidebar span:nth-child(1) { width: 58%; }
+        .ww-preview-sidebar span:nth-child(2) { width: 86%; }
+        .ww-preview-sidebar span:nth-child(3) { width: 70%; }
+
+        .ww-preview-main {
+          display: grid;
+          gap: 0.75rem;
+          padding: 0.75rem;
+        }
+
+        .ww-preview-chart {
+          display: flex;
+          align-items: end;
+          gap: 0.5rem;
+          min-height: 5.4rem;
+          padding: 0.75rem;
+        }
+
+        .ww-preview-chart span {
+          width: 100%;
+          border-radius: 0.4rem 0.4rem 0 0;
+          background: var(--ww-brand-gradient);
+          opacity: 0.72;
+          transform-origin: bottom;
+          animation: wwChartBeat 2.4s ease-in-out infinite;
+        }
+
+        .ww-preview-chart span:nth-child(1) { height: 34%; }
+        .ww-preview-chart span:nth-child(2) { height: 62%; animation-delay: 160ms; }
+        .ww-preview-chart span:nth-child(3) { height: 46%; animation-delay: 320ms; }
+        .ww-preview-chart span:nth-child(4) { height: 82%; animation-delay: 480ms; }
+
+        .ww-preview-bars {
+          display: grid;
+          gap: 0.48rem;
+        }
+
+        .ww-preview-bars span:nth-child(1) { width: 86%; }
+        .ww-preview-bars span:nth-child(2) { width: 62%; }
+
+        .ww-preview-profile {
+          display: grid;
+          place-items: center;
+          gap: 0.85rem;
+          min-height: 10rem;
+          padding: 1rem;
+        }
+
+        .ww-preview-avatar {
+          display: grid;
+          width: 3.75rem;
+          height: 3.75rem;
+          place-items: center;
+          border-radius: 999px;
+          background: var(--ww-brand-gradient);
+          color: #ffffff;
+          animation: wwSoftFloat 3.2s ease-in-out infinite;
+        }
+
+        .ww-preview-profile-lines {
+          width: min(100%, 10rem);
+        }
+
+        .ww-preview-profile-lines span {
+          margin: 0.45rem auto 0;
+        }
+
+        .ww-preview-profile-lines span:nth-child(1) { width: 80%; }
+        .ww-preview-profile-lines span:nth-child(2) { width: 60%; }
+        .ww-preview-profile-lines span:nth-child(3) { width: 70%; }
+
+        .ww-preview-skills {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 0.4rem;
+        }
+
+        .ww-preview-skills span {
+          border-radius: 999px;
+          background: rgba(139, 92, 246, 0.16);
+          color: var(--ww-purple);
+          padding: 0.25rem 0.5rem;
+          font-size: 0.68rem;
+          font-weight: 850;
+        }
+
+        .ww-preview-alerts {
+          padding: 0.8rem;
+        }
+
+        .ww-preview-alert {
+          min-height: 2.8rem;
+          animation: wwAlertLift 3s ease-in-out infinite;
+        }
+
+        .ww-preview-alert:nth-child(2) { animation-delay: 160ms; }
+        .ww-preview-alert:nth-child(3) { animation-delay: 320ms; }
+
+        .ww-preview-alert svg {
+          color: var(--ww-accent);
+        }
+
+        .ww-preview-alert span {
+          flex: 1;
+        }
+
+        .ww-preview-alert:nth-child(1) span { max-width: 78%; }
+        .ww-preview-alert:nth-child(2) span { max-width: 60%; }
+        .ww-preview-alert:nth-child(3) span { max-width: 86%; }
+
+        .ww-command-strip {
+          display: grid;
+          grid-template-columns: 1.1fr 0.9fr;
+          gap: 1.35rem;
+          margin-top: 1.35rem;
+        }
+
+        .ww-command-panel {
+          border: 1px solid var(--ww-border);
+          border-radius: 0.9rem;
+          background: var(--ww-panel);
+          box-shadow: var(--ww-shadow);
+          padding: 1.25rem;
+          animation: wwTileReveal 0.72s 3.82s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .ww-command-panel:nth-child(2) {
+          animation-delay: 3.9s;
+        }
+
+        .ww-command-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          color: var(--ww-muted);
+          font-size: 0.8rem;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+
+        .ww-command-body {
+          display: grid;
+          gap: 0.75rem;
+          margin-top: 1rem;
+        }
+
+        .ww-command-item {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+          border: 1px solid var(--ww-border);
+          border-radius: 0.75rem;
+          background: rgba(255, 255, 255, 0.035);
+          padding: 0.82rem;
+          color: var(--ww-heading);
+          font-size: 0.9rem;
+          font-weight: 800;
+        }
+
+        html:not(.dark) .ww-command-item {
+          background: rgba(15, 23, 42, 0.035);
+        }
+
+        .ww-command-item svg {
+          color: var(--ww-accent);
+        }
+
+        .ww-command-item span {
+          margin-left: auto;
+          color: var(--ww-muted-soft);
+          font-size: 0.78rem;
+        }
+
+        @keyframes wwLoaderVeil {
+          0%, 86% {
+            opacity: 1;
+            visibility: visible;
+          }
+          100% {
+            opacity: 0;
+            visibility: hidden;
+          }
+        }
+
+        @keyframes wwLoaderBrand {
+          0% {
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(1.08);
+          }
+          100% {
+            left: var(--ww-loader-left);
+            top: 2rem;
+            transform: translate(0, -50%) scale(0.62);
+          }
+        }
+
+        @keyframes wwLogoPop {
+          from {
+            opacity: 0;
+            transform: scale(0.72);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes wwLogoBreath {
+          from {
+            box-shadow: 0 18px 54px rgba(34, 211, 238, 0.22);
+          }
+          to {
+            box-shadow: 0 26px 76px rgba(139, 92, 246, 0.36);
+          }
+        }
+
+        @keyframes wwTypeLetter {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes wwCaretBlink {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0;
+          }
+        }
+
+        @keyframes wwCaretOut {
+          to {
+            opacity: 0;
+            transform: scaleY(0.65);
+          }
+        }
+
+        @keyframes wwShellReveal {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes wwTitleReveal {
+          from {
+            opacity: 0;
+            filter: blur(10px);
+            transform: translateY(22px) scale(0.985);
+          }
+          to {
+            opacity: 1;
+            filter: blur(0);
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes wwTileReveal {
+          from {
+            opacity: 0;
+            filter: blur(8px);
+            transform: translateY(24px) scale(0.985);
+          }
+          to {
+            opacity: 1;
+            filter: blur(0);
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes wwArrowNudge {
+          0%, 100% {
+            transform: translateX(0);
+          }
+          50% {
+            transform: translateX(4px);
+          }
+        }
+
+        @keyframes wwSignalGlow {
+          0%, 100% {
+            opacity: 0.75;
+            transform: translateY(0);
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(-1px);
+          }
+        }
+
+        @keyframes wwDotPulse {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(103, 232, 249, 0);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 0 0 0.35rem rgba(103, 232, 249, 0.12);
+            transform: scale(1.08);
+          }
+        }
+
+        @keyframes wwChartBeat {
+          0%, 100% {
+            transform: scaleY(0.9);
+            opacity: 0.58;
+          }
+          50% {
+            transform: scaleY(1);
+            opacity: 0.82;
+          }
+        }
+
+        @keyframes wwSoftFloat {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
+        }
+
+        @keyframes wwAlertLift {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-3px);
+          }
+        }
+
+        @keyframes wwFadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(18px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .ww-tile-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .ww-command-strip {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .ww-loader-brand {
+            --ww-loader-left: 1rem;
+          }
+
+          .ww-landing-shell {
+            width: min(100% - 1.25rem, 1280px);
+            padding: 3rem 0 5rem;
+          }
+
+          .ww-reference-hero {
+            min-height: 31rem;
+          }
+
+          .ww-reference-title {
+            font-size: clamp(2.45rem, 15vw, 4.6rem);
+          }
+
+          .ww-hero-actions {
+            width: 100%;
+          }
+
+          .ww-action {
+            width: 100%;
+          }
+
+          .ww-signal-row {
+            gap: 0.85rem;
+          }
+
+          .ww-tile-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .ww-feature-tile {
+            min-height: auto;
+          }
+
+          .ww-command-item {
+            align-items: flex-start;
+            flex-wrap: wrap;
+          }
+
+          .ww-command-item span {
+            width: 100%;
+            margin-left: 2rem;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ww-loader {
+            display: none;
+          }
+
+          .ww-loader,
+          .ww-loader-brand,
+          .ww-loader-logo,
+          .ww-loader-name,
+          .ww-loader-name span,
+          .ww-loader-name::after,
+          .ww-landing-shell,
+          .ww-announce,
+          .ww-reference-title,
+          .ww-reference-copy,
+          .ww-hero-actions,
+          .ww-signal-row,
+          .ww-feature-tile,
+          .ww-command-panel,
+          .ww-action-primary svg,
+          .ww-signal svg,
+          .ww-preview-dot,
+          .ww-preview-chart span,
+          .ww-preview-avatar,
+          .ww-preview-alert {
+            animation: none;
+          }
+
+          .ww-landing-shell,
+          .ww-announce,
+          .ww-reference-title,
+          .ww-reference-copy,
+          .ww-hero-actions,
+          .ww-signal-row,
+          .ww-feature-tile,
+          .ww-command-panel {
+            opacity: 1;
+            transform: none;
+          }
+        }
       `}</style>
 
-      <div className="ww-landing">
-        {/* Hero */}
-        <section className="ww-hero">
-          <canvas ref={canvasRef} className="ww-hero-canvas" />
-          <div className="ww-hero-overlay" />
-          <div className="ww-hero-glow ww-glow-cyan" />
-          <div className="ww-hero-glow ww-glow-purple" />
-          <div className="ww-hero-content">
-            <div className="ww-hero-badge">
-              <span className="ww-dot" />
-              Now live — Phase 2 rolling out
-            </div>
-            <h1>
-              <span className="ww-gradient">Find your next</span>
-              <br />
-              career wave
-            </h1>
-            <p>The job platform built for people who prefer signal over noise. Curated roles. Real data. Zero spam.</p>
-            <div className="ww-hero-buttons">
-              <Link href="/jobs" className="ww-btn ww-btn-primary">Browse Jobs</Link>
-              <Link href="/companies" className="ww-btn ww-btn-ghost">For Companies →</Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Stats */}
-        <section className="ww-section">
-          <div className="ww-stats-grid">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="ww-stat-card ww-fade-up">
-                <div className="ww-stat-number" data-target={stat.target}>0</div>
-                <div className="ww-stat-label">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Featured Jobs */}
-        <section className="ww-section" id="ww-jobs">
-          <div className="ww-section-label ww-fade-up">Featured Positions</div>
-          <h2 className="ww-section-title ww-fade-up">Hot Jobs Right Now</h2>
-          <p className="ww-section-sub ww-fade-up">Curated roles from top companies, matched to your skills and ambition.</p>
-          <div className="ww-jobs-grid">
-            {JOBS.map((job) => (
-              <div key={job.title} className="ww-job-card ww-fade-up ww-tilt">
-                <div className="ww-job-company">{job.company}</div>
-                <div className="ww-job-title">{job.title}</div>
-                <div className="ww-job-tags">
-                  {job.tags.map((tag) => (
-                    <span key={tag} className="ww-job-tag">{tag}</span>
-                  ))}
-                </div>
-                <div className="ww-job-salary">{job.salary}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Company Marquee */}
-        <div className="ww-marquee-section">
-          <div className="ww-marquee-track">{marqueeItems}</div>
+      <div className="ww-loader" aria-hidden="true">
+        <div className="ww-loader-brand">
+          <span className="ww-loader-logo">W</span>
+          <span className="ww-loader-name">
+            <span>W</span>
+            <span>o</span>
+            <span>r</span>
+            <span>k</span>
+            <span>W</span>
+            <span>a</span>
+            <span>v</span>
+            <span>e</span>
+          </span>
         </div>
+      </div>
 
-        {/* How It Works */}
-        <section className="ww-section">
-          <div className="ww-section-label ww-fade-up">How It Works</div>
-          <h2 className="ww-section-title ww-fade-up">Three Steps to Your New Role</h2>
-          <p className="ww-section-sub ww-fade-up">Our AI does the heavy lifting so you can focus on what matters.</p>
-          <div className="ww-steps-grid">
-            {STEPS.map((step) => (
-              <div key={step.num} className="ww-step-card ww-fade-up">
-                <span className="ww-step-num">{step.num}</span>
-                <span className="ww-step-icon">{step.icon}</span>
-                <h3>{step.title}</h3>
-                <p>{step.desc}</p>
-              </div>
+      <div className="ww-landing">
+        <div className="ww-landing-shell">
+          <section className="ww-reference-hero" aria-labelledby="landing-title">
+            <div className="ww-announce">
+              <strong>
+                <Sparkles size={13} />
+                New
+              </strong>
+              Faster local job matching is live
+            </div>
+
+            <h1 id="landing-title" className="ww-reference-title">
+              Find your next role
+              <span>with less noise</span>
+            </h1>
+
+            <p className="ww-reference-copy">
+              WorkWave brings local jobs, verified companies, clear salary signals, and application tracking into one focused workspace.
+            </p>
+
+            <div className="ww-hero-actions">
+              <Link href="/jobs" className="ww-action ww-action-primary">
+                Browse Jobs
+                <ArrowRight size={18} />
+              </Link>
+              <Link href="/companies" className="ww-action ww-action-secondary">
+                Explore Companies
+              </Link>
+            </div>
+
+            <div className="ww-signal-row" aria-label="WorkWave platform highlights">
+              {SIGNALS.map(({ icon: Icon, label }) => (
+                <span key={label} className="ww-signal">
+                  <Icon size={18} />
+                  {label}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section className="ww-tile-grid" aria-label="WorkWave feature previews">
+            {FEATURE_TILES.map(({ title, subtitle, icon: Icon, preview }) => (
+              <article key={title} className="ww-feature-tile">
+                <div className="ww-tile-heading">
+                  <h2>{title}</h2>
+                  <Icon size={21} />
+                </div>
+                <p className="ww-tile-subtitle">{subtitle}</p>
+                <div className="ww-tile-preview">
+                  <TilePreview type={preview} />
+                </div>
+              </article>
             ))}
-          </div>
-        </section>
+          </section>
 
-        {/* Testimonials */}
-        <section className="ww-section">
-          <div className="ww-section-label ww-fade-up">Success Stories</div>
-          <h2 className="ww-section-title ww-fade-up">Loved by Professionals</h2>
-          <p className="ww-section-sub ww-fade-up">Real people, real results. Here is what our community says.</p>
-          <div className="ww-testimonials-grid">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.initials} className="ww-test-card ww-fade-up">
-                <p className="ww-test-text">{t.text}</p>
-                <div className="ww-test-author">
-                  <div className="ww-test-avatar">{t.initials}</div>
-                  <div>
-                    <div className="ww-test-name">{t.name}</div>
-                    <div className="ww-test-role">{t.role}</div>
-                  </div>
+          <section className="ww-command-strip" aria-label="Primary WorkWave workflows">
+            <div className="ww-command-panel">
+              <div className="ww-command-header">
+                <span>For job seekers</span>
+                <Star size={18} />
+              </div>
+              <div className="ww-command-body">
+                <div className="ww-command-item">
+                  <SlidersHorizontal size={18} />
+                  Filter by location, salary, and work model
+                  <span>Fast search</span>
+                </div>
+                <div className="ww-command-item">
+                  <FileText size={18} />
+                  Save a profile and apply without rebuilding forms
+                  <span>One profile</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Pricing */}
-        <section className="ww-pricing-section">
-          <div className="ww-section-label ww-fade-up">💎 Pricing</div>
-          <h2 className="ww-section-title ww-fade-up">{String(t('pricing.title'))}</h2>
-          <p className="ww-section-sub ww-fade-up" style={{ margin: '0 auto 60px' }}>{String(t('pricing.subtitle'))}</p>
-          <div className="ww-pricing-grid">
-            {/* Free Plan */}
-            <div className="ww-pricing-card ww-fade-up">
-              <div className="ww-pricing-name">{String(t('pricing.free.name'))}</div>
-              <div className="ww-pricing-price">$0</div>
-              <ul className="ww-pricing-features">
-                {(t('pricing.free.features') as unknown as string[]).map((feat: string, i: number) => (
-                  <li key={i}>
-                    <span className="ww-check">✓</span>
-                    {feat}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/auth/register" className="ww-pricing-btn ww-pricing-btn-outline">
-                {String(t('pricing.getStarted'))}
-              </Link>
             </div>
-            {/* Premium Plan */}
-            <div className="ww-pricing-card ww-featured ww-fade-up">
-              <div className="ww-pricing-badge">{String(t('pricing.premium.badge'))}</div>
-              <div className="ww-pricing-name">{String(t('pricing.premium.name'))}</div>
-              <div className="ww-pricing-price">
-                $9.99<span className="ww-pricing-period">{String(t('pricing.premium.period'))}</span>
+
+            <div className="ww-command-panel">
+              <div className="ww-command-header">
+                <span>For employers</span>
+                <Zap size={18} />
               </div>
-              <ul className="ww-pricing-features">
-                {(t('pricing.premium.features') as unknown as string[]).map((feat: string, i: number) => (
-                  <li key={i}>
-                    <span className="ww-check">✓</span>
-                    {feat}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/auth/register" className="ww-pricing-btn ww-pricing-btn-primary">
-                {String(t('pricing.getStarted'))}
-              </Link>
+              <div className="ww-command-body">
+                <div className="ww-command-item">
+                  <BriefcaseBusiness size={18} />
+                  Post roles and review applicants in one dashboard
+                  <span>Hiring flow</span>
+                </div>
+                <div className="ww-command-item">
+                  <MessageSquare size={18} />
+                  Keep candidate communication close to the role
+                  <span>Direct thread</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="ww-cta">
-          <h2 className="ww-fade-up">
-            Ready to <span className="ww-gradient">Wave</span> Your Future?
-          </h2>
-          <p className="ww-fade-up">Join the platform that is redefining how the world works in 2026.</p>
-          <Link href="/auth/register" className="ww-btn ww-btn-primary ww-fade-up">
-            Create Free Account
-          </Link>
-        </section>
+          </section>
+        </div>
       </div>
     </>
   );

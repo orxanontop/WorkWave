@@ -15,7 +15,7 @@ export function Navbar() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/90 dark:bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/[0.06] shadow-sm dark:shadow-none">
+    <nav className="sticky top-0 z-50 border-b border-white/30 bg-white/55 shadow-[0_1px_0_rgba(15,23,42,0.04),0_18px_55px_rgba(15,23,42,0.08)] backdrop-blur-2xl dark:border-white/[0.09] dark:bg-[#0a0a0f]/45 dark:shadow-[0_1px_0_rgba(255,255,255,0.04),0_18px_55px_rgba(0,0,0,0.28)]">
       <div className="container-app">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}

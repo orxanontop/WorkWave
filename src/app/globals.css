@@ -376,3 +376,357 @@
     transform: translateY(0);
   }
 }
+
+/* Critical landing intro styles live globally so the loader appears before client CSS hydrates. */
+.ww-landing {
+  --ww-bg: #10131c;
+  --ww-bg-soft: rgba(255, 255, 255, 0.04);
+  --ww-panel: rgba(255, 255, 255, 0.075);
+  --ww-panel-strong: rgba(255, 255, 255, 0.11);
+  --ww-text: #f8fafc;
+  --ww-heading: #f8fafc;
+  --ww-muted: #cbd5e1;
+  --ww-muted-soft: #94a3b8;
+  --ww-border: rgba(226, 232, 240, 0.16);
+  --ww-border-strong: rgba(103, 232, 249, 0.42);
+  --ww-accent: #67e8f9;
+  --ww-accent-strong: #22d3ee;
+  --ww-purple: #c4b5fd;
+  --ww-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  --ww-brand-gradient: linear-gradient(135deg, #67e8f9, #c4b5fd);
+  min-height: calc(100vh - 4rem);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 8%, rgba(34, 211, 238, 0.14), transparent 29rem),
+    radial-gradient(circle at 86% 5%, rgba(139, 92, 246, 0.14), transparent 27rem),
+    var(--ww-bg);
+  color: var(--ww-text);
+}
+
+html:not(.dark) .ww-landing {
+  --ww-bg: #ffffff;
+  --ww-bg-soft: rgba(15, 23, 42, 0.035);
+  --ww-panel: rgba(255, 255, 255, 0.88);
+  --ww-panel-strong: rgba(248, 250, 252, 0.96);
+  --ww-text: #0f172a;
+  --ww-heading: #0b1220;
+  --ww-muted: #475569;
+  --ww-muted-soft: #64748b;
+  --ww-border: rgba(15, 23, 42, 0.12);
+  --ww-border-strong: rgba(8, 145, 178, 0.36);
+  --ww-accent: #0e7490;
+  --ww-accent-strong: #0891b2;
+  --ww-purple: #6d28d9;
+  --ww-shadow: 0 18px 52px rgba(15, 23, 42, 0.1);
+  --ww-brand-gradient: linear-gradient(135deg, #0891b2, #7c3aed);
+  background:
+    radial-gradient(circle at 16% 8%, rgba(8, 145, 178, 0.12), transparent 29rem),
+    radial-gradient(circle at 86% 5%, rgba(124, 58, 237, 0.12), transparent 27rem),
+    var(--ww-bg);
+}
+
+.ww-loader {
+  --ww-bg: #10131c;
+  --ww-heading: #f8fafc;
+  --ww-accent: #67e8f9;
+  --ww-brand-gradient: linear-gradient(135deg, #67e8f9, #c4b5fd);
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(34, 211, 238, 0.18), transparent 18rem),
+    radial-gradient(circle at 60% 51%, rgba(139, 92, 246, 0.18), transparent 20rem),
+    linear-gradient(135deg, #0d1b2a 0%, #10131c 48%, #1c1635 100%),
+    var(--ww-bg);
+  animation: wwLoaderVeil 2.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.ww-loader-brand {
+  --ww-loader-left: max(1rem, calc((100vw - 1280px) / 2 + 2rem));
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  transform: translate(-50%, -50%) scale(1.08);
+  transform-origin: left center;
+  animation: wwLoaderBrand 1.05s 1.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.ww-loader-logo {
+  display: grid;
+  width: 4rem;
+  height: 4rem;
+  place-items: center;
+  border-radius: 1.25rem;
+  background: var(--ww-brand-gradient);
+  color: #ffffff;
+  font-size: 1.6rem;
+  font-weight: 900;
+  box-shadow: 0 24px 70px rgba(34, 211, 238, 0.34);
+  animation:
+    wwLogoPop 380ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    wwLogoBreath 780ms 380ms ease-in-out infinite alternate;
+}
+
+.ww-loader-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.01em;
+  background: var(--ww-brand-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--ww-heading);
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  font-weight: 900;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.ww-loader-name span {
+  display: inline-block;
+  background: var(--ww-brand-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--ww-heading);
+  opacity: 0;
+  transform: translateY(0.35em);
+  animation: wwTypeLetter 120ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.ww-loader-name span:nth-child(1) { animation-delay: 220ms; }
+.ww-loader-name span:nth-child(2) { animation-delay: 300ms; }
+.ww-loader-name span:nth-child(3) { animation-delay: 380ms; }
+.ww-loader-name span:nth-child(4) { animation-delay: 460ms; }
+.ww-loader-name span:nth-child(5) { animation-delay: 540ms; }
+.ww-loader-name span:nth-child(6) { animation-delay: 620ms; }
+.ww-loader-name span:nth-child(7) { animation-delay: 700ms; }
+.ww-loader-name span:nth-child(8) { animation-delay: 780ms; }
+
+.ww-loader-name::after {
+  content: '';
+  width: 0.08em;
+  height: 0.95em;
+  margin-left: 0.08em;
+  border-radius: 999px;
+  background: var(--ww-accent);
+  box-shadow: 0 0 18px rgba(103, 232, 249, 0.55);
+  animation:
+    wwCaretBlink 520ms steps(1, end) infinite,
+    wwCaretOut 180ms 1.08s ease-out forwards;
+}
+
+html:not(.dark) .ww-loader {
+  --ww-bg: #ffffff;
+  --ww-heading: #0b1220;
+  --ww-accent: #0e7490;
+  --ww-brand-gradient: linear-gradient(135deg, #0891b2, #7c3aed);
+  background:
+    radial-gradient(circle at 50% 48%, rgba(8, 145, 178, 0.15), transparent 18rem),
+    radial-gradient(circle at 60% 51%, rgba(124, 58, 237, 0.15), transparent 20rem),
+    linear-gradient(135deg, #f8fafc 0%, #eefaff 48%, #f4f0ff 100%),
+    var(--ww-bg);
+}
+
+.ww-landing-shell {
+  opacity: 0;
+  animation: wwShellReveal 0.65s 2.58s ease-out forwards;
+}
+
+.ww-announce {
+  animation: wwFadeUp 0.62s 2.68s ease-out both;
+}
+
+.ww-reference-title {
+  animation: wwTitleReveal 0.78s 2.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ww-reference-copy {
+  animation: wwFadeUp 0.62s 2.98s ease-out both;
+}
+
+.ww-hero-actions {
+  animation: wwFadeUp 0.62s 3.12s ease-out both;
+}
+
+.ww-signal-row {
+  animation: wwFadeUp 0.62s 3.26s ease-out both;
+}
+
+.ww-feature-tile {
+  animation: wwTileReveal 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ww-feature-tile:nth-child(1) { animation-delay: 3.42s; }
+.ww-feature-tile:nth-child(2) { animation-delay: 3.5s; }
+.ww-feature-tile:nth-child(3) { animation-delay: 3.58s; }
+.ww-feature-tile:nth-child(4) { animation-delay: 3.66s; }
+
+.ww-command-panel {
+  animation: wwTileReveal 0.72s 3.82s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ww-command-panel:nth-child(2) {
+  animation-delay: 3.9s;
+}
+
+@keyframes wwLoaderVeil {
+  0%, 86% {
+    opacity: 1;
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes wwLoaderBrand {
+  0% {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  100% {
+    left: var(--ww-loader-left);
+    top: 2rem;
+    transform: translate(0, -50%) scale(0.62);
+  }
+}
+
+@keyframes wwLogoPop {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes wwLogoBreath {
+  from {
+    box-shadow: 0 18px 54px rgba(34, 211, 238, 0.22);
+  }
+  to {
+    box-shadow: 0 26px 76px rgba(139, 92, 246, 0.36);
+  }
+}
+
+@keyframes wwTypeLetter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wwCaretBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes wwCaretOut {
+  to {
+    opacity: 0;
+    transform: scaleY(0.65);
+  }
+}
+
+@keyframes wwShellReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wwFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wwTitleReveal {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(22px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes wwTileReveal {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(24px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .ww-loader-brand {
+    --ww-loader-left: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-loader,
+  .ww-loader-brand,
+  .ww-loader-logo,
+  .ww-loader-name,
+  .ww-loader-name span,
+  .ww-loader-name::after,
+  .ww-landing-shell,
+  .ww-announce,
+  .ww-reference-title,
+  .ww-reference-copy,
+  .ww-hero-actions,
+  .ww-signal-row,
+  .ww-feature-tile,
+  .ww-command-panel {
+    animation: none;
+  }
+
+  .ww-loader {
+    display: none;
+  }
+
+  .ww-landing-shell,
+  .ww-announce,
+  .ww-reference-title,
+  .ww-reference-copy,
+  .ww-hero-actions,
+  .ww-signal-row,
+  .ww-feature-tile,
+  .ww-command-panel {
+    opacity: 1;
+    transform: none;
+  }
+}
